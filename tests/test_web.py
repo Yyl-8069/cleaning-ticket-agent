@@ -5,6 +5,7 @@ from app.main import create_app
 SAMPLE = Path(__file__).resolve().parents[1] / 'data' / 'case-001.json'
 
 def fake_analysis(case_id, run_id, tools):
+    """用固定分析结果代替收费模型完成网页流程测试。"""
     order = tools.get_order('ORDER-DEMO-20261022-001')
     return {'intent': '查询物流；如果今天仍未收到，考虑退款',
             'verified_facts': [{'text': '订单已发货', 'source': order['source']}],
@@ -15,6 +16,7 @@ def fake_analysis(case_id, run_id, tools):
             'token_usage': {'input': 0, 'output': 0}}
 
 def test_upload_process_and_refresh(tmp_path):
+    """确认上传后能分析、跳转并在刷新后读取结果。"""
     client = TestClient(create_app(tmp_path / 'app.db', fake_analysis))
     response = client.post('/cases/upload', files={'file': ('case.json', SAMPLE.read_bytes(), 'application/json')}, follow_redirects=False)
     assert response.status_code == 303
@@ -24,6 +26,7 @@ def test_upload_process_and_refresh(tmp_path):
     assert client.get(response.headers['location']).status_code == 200
 
 def test_invalid_upload_does_not_create_run(tmp_path):
+    """确认无效 JSON 在进入分析前返回错误。"""
     client = TestClient(create_app(tmp_path / 'app.db', fake_analysis))
     response = client.post('/cases/upload', files={'file': ('bad.json', b'{', 'application/json')})
     assert response.status_code == 400

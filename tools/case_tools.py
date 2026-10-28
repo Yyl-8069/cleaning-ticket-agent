@@ -4,6 +4,7 @@ from datetime import datetime
 
 
 def applicable_policy(case):
+    """按案例快照时间筛选当前有效的店铺规则。"""
     policy = case.get('policy')
     if not policy:
         return None
@@ -15,11 +16,13 @@ def applicable_policy(case):
 
 class CaseTools:
     def __init__(self, storage, case_id, on_call=None):
+        """绑定单个案例的只读查询范围和调用记录器。"""
         self.case = storage.get_case(case_id)
         self.on_call = on_call or (lambda name, status: None)
         self.observed_sources = set()
 
     def _read(self, name, requested, expected, data, source):
+        """统一返回查询状态、来源和观察时间，并拒绝跨案例编号。"""
         status = 'forbidden' if requested != expected else ('not_found' if not data else 'found')
         if status == 'found':
             self.observed_sources.add(source)
@@ -28,31 +31,37 @@ class CaseTools:
                 'source': source, 'observed_at': self.case['metadata']['snapshot_at']}
 
     def get_ticket(self, ticket_id):
+        """按工单号读取工单与客户消息。"""
         return self._read('get_ticket', ticket_id, self.case['ticket']['ticket_id'],
                           {'ticket': self.case['ticket'], 'messages': self.case['messages']}, '模拟工单快照')
 
     def get_order(self, order_id):
+        """按订单号读取订单及商品明细。"""
         order = self.case.get('order')
         data = {'order': order, 'order_items': self.case.get('order_items', [])} if order else None
         return self._read('get_order', order_id, self.case['ticket']['order_id'], data,
                           (order or {}).get('source', '模拟订单服务'))
 
     def get_product(self, product_id):
+        """按商品号读取商品目录快照。"""
         product = self.case.get('product')
         return self._read('get_product', product_id, (product or {}).get('product_id'), product,
                           (product or {}).get('source', '模拟商品目录'))
 
     def get_shipments(self, order_id):
+        """按订单号读取包裹和物流轨迹。"""
         shipments = self.case.get('shipments', [])
         return self._read('get_shipments', order_id, self.case['ticket']['order_id'], shipments,
                           shipments[0].get('source', '模拟物流服务') if shipments else '模拟物流服务')
 
     def get_history(self, ticket_id):
+        """按工单号读取关联售后历史。"""
         history = self.case.get('history')
         return self._read('get_history', ticket_id, self.case['ticket']['ticket_id'], history,
                           (history or {}).get('source', '模拟售后服务'))
 
     def get_policy(self, shop_id):
+        """按店铺号读取在快照时间有效的规则。"""
         policy = applicable_policy(self.case)
         return self._read('get_policy', shop_id, self.case['ticket']['shop_id'], policy,
                           (policy or {}).get('source', '模拟店铺规则'))

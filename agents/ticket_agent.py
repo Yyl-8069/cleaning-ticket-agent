@@ -26,6 +26,7 @@ class AnalysisError(RuntimeError):
 
     @property
     def safe_reason(self):
+        """只暴露预设的安全失败原因，避免泄露原始异常信息。"""
         message = str(self)
         if message.startswith('模型输出缺少 ') and message.removeprefix('模型输出缺少 ') in (
             'intent', 'verified_facts', 'missing_information', 'recommendation',
@@ -36,6 +37,7 @@ class AnalysisError(RuntimeError):
 
 
 def validate_result(result, tools):
+    """校验模型输出结构、事实来源和禁止声称的业务动作。"""
     if not isinstance(result, dict):
         raise AnalysisError('模型输出不是 JSON 对象')
     for name in ('intent', 'verified_facts', 'missing_information', 'recommendation',
@@ -71,6 +73,7 @@ def validate_result(result, tools):
 
 
 def analyze_ticket(case_id, run_id, tools):
+    """让单个 LangChain Agent 查询当前案例并生成分析结果。"""
     key = os.environ.get('DEEPSEEK_API_KEY')
     if not key:
         raise AnalysisError('未设置 DEEPSEEK_API_KEY')
@@ -89,7 +92,9 @@ def analyze_ticket(case_id, run_id, tools):
     wrapped = []
     for name in names:
         def make_call(method_name):
+            """为指定的只读业务方法生成 LangChain 工具函数。"""
             def call(identifier: str) -> str:
+                """执行一次受案例范围约束的工具查询。"""
                 return json.dumps(getattr(tools, method_name)(identifier), ensure_ascii=False)
             return call
         wrapped.append(tool(name, description=f'{descriptions[name]}；identifier 为对应编号，只读')(make_call(name)))

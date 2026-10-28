@@ -10,6 +10,7 @@ class CaseValidationError(ValueError):
 
 
 def _need(obj, path):
+    """读取必填字段，并在缺失时指出字段路径。"""
     value = obj
     for part in path.split('.'):
         if not isinstance(value, dict) or part not in value or value[part] in ('', None):
@@ -19,6 +20,7 @@ def _need(obj, path):
 
 
 def parse_case(raw: bytes) -> dict:
+    """校验上传的模拟案例及其跨对象关联。"""
     if len(raw) > MAX_BYTES:
         raise CaseValidationError('文件超过 1 MiB 上限')
     try:

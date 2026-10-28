@@ -18,6 +18,7 @@ templates = Jinja2Templates(directory=str(ROOT / 'app' / 'templates'))
 
 
 def create_app(db_path=None, analyzer=None):
+    """组装 FastAPI 应用及其存储、日志和分析依赖。"""
     app = FastAPI(title='清洁日用品工单 Agent 1.0')
     storage = Storage(db_path or ROOT / 'runtime' / 'app.db')
     logger = RunLogger((Path(db_path).parent if db_path else ROOT / 'runtime') / 'agent.jsonl')
@@ -25,10 +26,12 @@ def create_app(db_path=None, analyzer=None):
 
     @app.get('/', response_class=HTMLResponse)
     def index(request: Request):
+        """展示单案例 JSON 上传页面。"""
         return templates.TemplateResponse(request, 'index.html', {})
 
     @app.post('/cases/upload')
     async def upload(background_tasks: BackgroundTasks, file: UploadFile = File(...)):
+        """校验并保存上传案例，然后排队执行分析。"""
         raw = await file.read(MAX_BYTES + 1)
         try:
             bundle = parse_case(raw)
@@ -42,6 +45,7 @@ def create_app(db_path=None, analyzer=None):
 
     @app.get('/runs/{run_id}', response_class=HTMLResponse)
     def run_page(request: Request, run_id: str):
+        """按运行编号展示持久化的分析结果或失败原因。"""
         try:
             run = storage.get_run(run_id)
             case = storage.get_case(run['case_id'])
@@ -51,6 +55,7 @@ def create_app(db_path=None, analyzer=None):
 
     @app.get('/health')
     def health():
+        """检查服务和 SQLite 数据库是否可用。"""
         try:
             with storage._db() as db:
                 db.execute('SELECT 1')

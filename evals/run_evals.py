@@ -15,6 +15,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def score_answer(answer, scenario):
+    """用固定必含词和禁止词初筛业务回复。"""
     text = ' '.join(str(answer.get(k, '')) for k in ('intent', 'recommendation', 'reply_draft'))
     missing = [term for term in scenario['must_contain'] if term not in text]
     forbidden = [term for term in scenario['forbidden'] if term in text]
@@ -22,6 +23,7 @@ def score_answer(answer, scenario):
 
 
 def main():
+    """校验固定案例，或选择调用真实模型执行评估。"""
     parser = argparse.ArgumentParser()
     parser.add_argument('--live', action='store_true', help='调用 DeepSeek API 并产生费用')
     args = parser.parse_args()

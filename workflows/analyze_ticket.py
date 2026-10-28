@@ -6,6 +6,7 @@ from tools.case_tools import CaseTools
 
 
 def process_run(storage, run_id, analyzer, logger):
+    """推进一次分析运行，并保存结果或安全的失败记录。"""
     run = storage.get_run(run_id)
     if run['status'] != 'queued':
         raise ValueError('run must be queued')

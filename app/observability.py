@@ -8,6 +8,7 @@ from app.storage import now
 
 class RunLogger:
     def __init__(self, path):
+        """配置按大小轮转的本地 JSONL 日志。"""
         Path(path).parent.mkdir(parents=True, exist_ok=True)
         self.logger = logging.getLogger(f'ticket.{path}')
         self.logger.setLevel(logging.INFO)
@@ -18,6 +19,7 @@ class RunLogger:
             self.logger.addHandler(handler)
 
     def event(self, storage, run_id, event_type, summary, metrics=None):
+        """同时记录脱敏事件和允许的运行指标。"""
         # Only controlled event names and status summaries reach persistent logs.
         storage.event(run_id, event_type, summary)
         safe = {k: v for k, v in (metrics or {}).items()
