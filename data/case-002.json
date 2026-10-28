@@ -1,0 +1,135 @@
+{
+  "metadata": {
+    "case_id": "CASE-002",
+    "synthetic": true,
+    "platform_context": "拼多多清洁类日用品店铺售后场景模拟；非官方接口或规则",
+    "snapshot_at": "2026-10-28T10:00:00+08:00",
+    "timezone": "Asia/Shanghai",
+    "currency": "CNY",
+    "money_unit": "fen",
+    "source": "人工构造的开发样例",
+    "usage": "模拟售后工单测试数据；不代表真实订单或平台规则"
+  },
+  "shop": {
+    "shop_id": "SHOP-DEMO-001",
+    "name": "清禾清洁日用品店（虚构）"
+  },
+  "customer": {
+    "customer_id": "CUSTOMER-DEMO-002",
+    "shop_id": "SHOP-DEMO-001",
+    "display_name": "模拟客户002"
+  },
+  "ticket": {
+    "ticket_id": "TK-DEMO-002",
+    "shop_id": "SHOP-DEMO-001",
+    "customer_id": "CUSTOMER-DEMO-002",
+    "order_id": "ORDER-DEMO-20261027-002",
+    "status": "pending",
+    "assigned_to": null,
+    "created_at": "2026-10-28T09:00:00+08:00",
+    "closed_at": null,
+    "closure_reason": null
+  },
+  "messages": [
+    {
+      "message_id": "MSG-DEMO-002",
+      "ticket_id": "TK-DEMO-002",
+      "role": "customer",
+      "created_at": "2026-10-28T09:00:00+08:00",
+      "content": "我昨天买的厨房去油污清洁剂还没发货，请帮我看看什么时候能发。",
+      "attachments": []
+    }
+  ],
+  "order": {
+    "order_id": "ORDER-DEMO-20261027-002",
+    "shop_id": "SHOP-DEMO-001",
+    "customer_id": "CUSTOMER-DEMO-002",
+    "status": "paid",
+    "paid_amount_fen": 5990,
+    "refunded_amount_fen": 0,
+    "paid_at": "2026-10-27T16:20:00+08:00",
+    "shipped_at": null,
+    "receipt_confirmed_at": null,
+    "after_sales_status": "none",
+    "estimated_delivery_at": null,
+    "version": 1,
+    "source": "模拟订单服务",
+    "observed_at": "2026-10-28T10:00:00+08:00"
+  },
+  "order_items": [
+    {
+      "order_item_id": "ITEM-DEMO-002",
+      "order_id": "ORDER-DEMO-20261027-002",
+      "product_id": "PRODUCT-DEMO-001",
+      "sku_id": "SKU-DEMO-001",
+      "quantity": 1,
+      "unit": "套",
+      "paid_amount_fen": 5990,
+      "purchase_snapshot": {
+        "captured_at": "2026-10-27T16:20:00+08:00",
+        "title": "厨房去油污清洁剂双瓶装",
+        "sku_description": "500mL/瓶 × 2瓶，喷头瓶装",
+        "category": "家居清洁 / 厨房清洁剂",
+        "packing_list": [
+          "500mL厨房去油污清洁剂（含喷头） × 2瓶"
+        ],
+        "usage": "厨房油污清洁；具体适用表面及操作方法需查询经审核的商品标签说明",
+        "delivery_date_promise": null
+      }
+    }
+  ],
+  "product": {
+    "product_id": "PRODUCT-DEMO-001",
+    "shop_id": "SHOP-DEMO-001",
+    "sku_id": "SKU-DEMO-001",
+    "title": "厨房去油污清洁剂双瓶装",
+    "sku_description": "500mL/瓶 × 2瓶，喷头瓶装",
+    "category": "家居清洁 / 厨房清洁剂",
+    "packing_list": [
+      "500mL厨房去油污清洁剂（含喷头） × 2瓶"
+    ],
+    "net_content_ml_per_bottle": 500,
+    "bottles_per_set": 2,
+    "ingredients": null,
+    "approved_label_document": null,
+    "applicable_surfaces": null,
+    "usage_instructions": null,
+    "shelf_life_months": null,
+    "product_information_note": "商品名称、容量及包装均为模拟；成分、适用表面、用法和保质期尚未提供，不可推断或生成确定性使用承诺。生产日期与批次需另查实际发货批次资料。",
+    "source": "模拟商品目录",
+    "version": 1,
+    "observed_at": "2026-10-28T10:00:00+08:00"
+  },
+  "shipments": [],
+  "policy": null,
+  "authorization": {
+    "shop_id": "SHOP-DEMO-001",
+    "principal": "demo_agent",
+    "allowed_actions": [
+      "read_scoped_order",
+      "read_scoped_shipment",
+      "read_policy",
+      "read_ticket_history",
+      "draft_reply"
+    ],
+    "forbidden_actions": [
+      "create_logistics_ticket",
+      "submit_refund_approval",
+      "approve_refund",
+      "execute_refund",
+      "send_reply",
+      "access_other_shop_data"
+    ],
+    "reply_delivery": "客服确认后发送，生成草稿不代表已发送"
+  },
+  "history": {
+    "source": "模拟售后服务",
+    "observed_at": "2026-10-28T10:00:00+08:00",
+    "previous_tickets": [],
+    "logistics_tickets": [],
+    "refund_approvals": [],
+    "refund_transactions": [],
+    "action_records": [],
+    "followups": []
+  }
+}
