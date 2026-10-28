@@ -30,23 +30,45 @@ def result():
             'status': 'needs_information'}
 
 
+# 防止草稿声称尚未执行的退款。
 def test_rejects_claimed_refund(tmp_path):
-    """防止草稿声称尚未执行的退款。"""
     storage, case_id, _ = make_run(tmp_path)
     answer = result()
     answer['reply_draft'] = '已经退款，请查收'
-    with pytest.raises(AnalysisError):
-        validate_result(answer, CaseTools(storage, case_id))
+    tools = CaseTools(storage, case_id)
+    tools.get_order('ORDER-DEMO-20261022-001')
+    with pytest.raises(AnalysisError, match='未授权业务动作'):
+        validate_result(answer, tools)
 
 
+# 记录命中的字段和固定禁令，便于排查误判且不保存模型原文。
+def test_rejected_claim_logs_field_and_rule_without_raw_text(tmp_path):
+    storage, _, run_id = make_run(tmp_path)
+    logger = RunLogger(tmp_path / 'agent.jsonl')
+    # 模拟模型把禁令字样写在建议中，附加私有内容不应进入日志。
+    def flagged(case_id, run_id, tools):
+        tools.get_order('ORDER-DEMO-20261022-001')
+        answer = result()
+        answer['recommendation'] = '不要说已退款 private customer text'
+        return answer
+    process_run(storage, run_id, flagged, logger)
+    records = [json.loads(line) for line in (tmp_path / 'agent.jsonl').read_text(encoding='utf-8').splitlines()]
+    assert records[-2]['event_type'] == 'validation_rejected'
+    assert records[-2]['summary'] == 'recommendation:已退款'
+    assert records[-1]['event_type'] == 'run_failed'
+    assert 'private customer text' not in (tmp_path / 'agent.jsonl').read_text(encoding='utf-8')
+
+
+# 拒绝未执行动作或未证实物流结论的声明。
 @pytest.mark.parametrize('claim', ['已提交退款审批', '已发送消息', '已经签收', '已经丢件'])
 def test_rejects_unperformed_or_unverified_claims(tmp_path, claim):
-    """拒绝未执行动作或未证实物流结论的声明。"""
     storage, case_id, _ = make_run(tmp_path)
     answer = result()
     answer['reply_draft'] = claim
-    with pytest.raises(AnalysisError):
-        validate_result(answer, CaseTools(storage, case_id))
+    tools = CaseTools(storage, case_id)
+    tools.get_order('ORDER-DEMO-20261022-001')
+    with pytest.raises(AnalysisError, match='未授权业务动作'):
+        validate_result(answer, tools)
 
 
 # 拒绝把当前案例以外的来源写成事实依据。

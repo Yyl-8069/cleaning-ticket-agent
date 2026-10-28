@@ -24,9 +24,15 @@ class AnalysisError(RuntimeError):
         'Agent 未在规定轮次内结束',
     })
 
+    # 保存由程序固定规则产生的诊断标签，不保存模型原文。
+    def __init__(self, message, field=None, rule=None):
+        super().__init__(message)
+        self.field = field
+        self.rule = rule
+
+    # 只向页面和日志暴露白名单中的失败原因。
     @property
     def safe_reason(self):
-        """只暴露预设的安全失败原因，避免泄露原始异常信息。"""
         message = str(self)
         if message.startswith('模型输出缺少 ') and message.removeprefix('模型输出缺少 ') in (
             'intent', 'verified_facts', 'missing_information', 'recommendation',
@@ -65,9 +71,12 @@ def validate_result(result, tools):
         raise AnalysisError('规则版本与案例不一致')
     forbidden = ('已退款', '已经退款', '已提交退款审批', '已发送消息', '已经签收',
                  '已经丢件', '已创建物流核查工单', '已经建单', '已为您退款')
-    combined = result['recommendation'] + result['reply_draft'] + ' '.join(f['text'] for f in result['verified_facts'])
-    if any(text in combined for text in forbidden):
-        raise AnalysisError('草稿声称执行了未授权业务动作')
+    fields = {'recommendation': result['recommendation'], 'reply_draft': result['reply_draft'],
+              'verified_facts': ' '.join(f['text'] for f in result['verified_facts'])}
+    for field, value in fields.items():
+        for phrase in forbidden:
+            if phrase in value:
+                raise AnalysisError('草稿声称执行了未授权业务动作', field=field, rule=phrase)
     return result
 
 

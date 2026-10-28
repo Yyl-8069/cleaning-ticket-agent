@@ -27,6 +27,8 @@ def process_run(storage, run_id, analyzer, logger):
                       'output_tokens': usage.get('output', 0), 'model': result.get('model', 'test')})
     except Exception as exc:
         storage.set_run(run_id, 'failed', error_type=type(exc).__name__)
+        if isinstance(exc, AnalysisError) and exc.field and exc.rule:
+            logger.event(storage, run_id, 'validation_rejected', f'{exc.field}:{exc.rule}')
         logger.event(storage, run_id, 'run_failed',
                      exc.safe_reason if isinstance(exc, AnalysisError) else type(exc).__name__,
                      {'duration_ms': round((monotonic() - started) * 1000)})
