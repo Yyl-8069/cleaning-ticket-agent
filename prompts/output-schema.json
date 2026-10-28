@@ -1,0 +1,1 @@
+{"intent":"string","verified_facts":[{"text":"string","source":"string"}],"missing_information":["string"],"recommendation":"string","reply_draft":"string","policy_version":"当前案例的 policy_id；缺失时为 null","status":"succeeded 或 needs_information"}

@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cleaning-ticket-agent"
+version = "1.0.0"
+requires-python = ">=3.11"
+dependencies = [
+  "fastapi==0.128.2",
+  "uvicorn==0.40.0",
+  "python-multipart==0.0.22",
+  "jinja2==3.1.4",
+  "langchain-core==1.2.9",
+  "langchain-openai==1.1.7",
+]
+
+[project.optional-dependencies]
+dev = ["pytest==7.4.4", "httpx==0.27.0"]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+
+[tool.setuptools]
+packages = ["app", "agents", "context", "tools", "workflows", "evals"]
+
+[tool.setuptools.package-data]
+app = ["templates/*.html"]
