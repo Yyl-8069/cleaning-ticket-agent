@@ -15,7 +15,24 @@ MAX_SECONDS = 90
 
 
 class AnalysisError(RuntimeError):
-    pass
+    SAFE_REASONS = frozenset({
+        '模型输出不是 JSON 对象', '模型输出状态无效', '事实和待确认信息必须为列表',
+        '事实缺少内容或来源', '事实来源不属于当前案例', '事实来源未经过实际查询',
+        '规则版本与案例不一致', '草稿声称执行了未授权业务动作',
+        '未设置 DEEPSEEK_API_KEY', 'Agent 运行超时', '模型输出不是文本',
+        '模型输出不是合法 JSON', '工具调用次数超限', '请求了未知工具',
+        'Agent 未在规定轮次内结束',
+    })
+
+    @property
+    def safe_reason(self):
+        message = str(self)
+        if message.startswith('模型输出缺少 ') and message.removeprefix('模型输出缺少 ') in (
+            'intent', 'verified_facts', 'missing_information', 'recommendation',
+            'reply_draft', 'policy_version', 'status',
+        ):
+            return message
+        return message if message in self.SAFE_REASONS else type(self).__name__
 
 
 def validate_result(result, tools):
@@ -61,13 +78,21 @@ def analyze_ticket(case_id, run_id, tools):
     model = ChatOpenAI(model=model_name, api_key=key, base_url='https://api.deepseek.com',
                        timeout=30, max_retries=0, temperature=0)
     names = ('get_ticket', 'get_order', 'get_product', 'get_shipments', 'get_history', 'get_policy')
+    descriptions = {
+        'get_ticket': '用工单 ticket_id 查询消息和工单',
+        'get_order': '用订单 order_id 查询订单和商品编号',
+        'get_product': '用商品 product_id 查询商品',
+        'get_shipments': '用订单 order_id 查询物流',
+        'get_history': '用工单 ticket_id 查询历史；不能传订单号',
+        'get_policy': '用店铺 shop_id 查询当前适用规则',
+    }
     wrapped = []
     for name in names:
         def make_call(method_name):
             def call(identifier: str) -> str:
                 return json.dumps(getattr(tools, method_name)(identifier), ensure_ascii=False)
             return call
-        wrapped.append(tool(name, description=f'只读查询当前案例的{name[4:]}；identifier 为相关编号')(make_call(name)))
+        wrapped.append(tool(name, description=f'{descriptions[name]}；identifier 为对应编号，只读')(make_call(name)))
     model = model.bind_tools(wrapped)
     prompt = '\n\n'.join((PROMPTS / name).read_text(encoding='utf-8')
                          for name in ('system.md', 'constraints.md', 'examples.md', 'output-schema.json'))

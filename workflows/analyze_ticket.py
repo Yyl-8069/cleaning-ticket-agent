@@ -1,7 +1,7 @@
 """Owns run state; model and read-only tools never update business records."""
 from time import monotonic
 
-from agents.ticket_agent import validate_result
+from agents.ticket_agent import AnalysisError, validate_result
 from tools.case_tools import CaseTools
 
 
@@ -25,4 +25,5 @@ def process_run(storage, run_id, analyzer, logger):
                       'output_tokens': usage.get('output', 0), 'model': result.get('model', 'test')})
     except Exception as exc:
         storage.set_run(run_id, 'failed', error_type=type(exc).__name__)
-        logger.event(storage, run_id, 'run_failed', type(exc).__name__)
+        logger.event(storage, run_id, 'run_failed',
+                     exc.safe_reason if isinstance(exc, AnalysisError) else type(exc).__name__)

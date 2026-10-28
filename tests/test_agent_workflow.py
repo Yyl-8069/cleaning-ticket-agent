@@ -71,6 +71,24 @@ def test_failed_model_keeps_failure_without_leaking_secret(tmp_path):
     assert 'secret-key' not in (tmp_path / 'agent.jsonl').read_text(encoding='utf-8')
 
 
+def test_known_analysis_failure_records_safe_reason(tmp_path):
+    storage, _, run_id = make_run(tmp_path)
+    logger = RunLogger(tmp_path / 'agent.jsonl')
+    def fail(*args):
+        raise AnalysisError('模型输出不是合法 JSON')
+    process_run(storage, run_id, fail, logger)
+    assert storage.get_run(run_id)['events'][-1]['summary'] == '模型输出不是合法 JSON'
+
+
+def test_unknown_analysis_message_is_not_logged(tmp_path):
+    storage, _, run_id = make_run(tmp_path)
+    logger = RunLogger(tmp_path / 'agent.jsonl')
+    def fail(*args):
+        raise AnalysisError('secret-key customer raw text')
+    process_run(storage, run_id, fail, logger)
+    assert 'secret-key' not in (tmp_path / 'agent.jsonl').read_text(encoding='utf-8')
+
+
 def test_restart_marks_running_interrupted(tmp_path):
     storage, _, run_id = make_run(tmp_path)
     storage.set_run(run_id, 'running')
