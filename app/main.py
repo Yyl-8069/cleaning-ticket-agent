@@ -1,5 +1,5 @@
 """FastAPI upload and persistent result view."""
-import os
+from datetime import datetime
 from pathlib import Path
 
 from fastapi import BackgroundTasks, FastAPI, File, HTTPException, UploadFile
@@ -43,15 +43,38 @@ def create_app(db_path=None, analyzer=None):
         background_tasks.add_task(process_run, storage, run_id, analyzer, logger)
         return RedirectResponse(f'/runs/{run_id}', status_code=303)
 
+    # 将持久化运行记录整理为用户可读的状态、耗时和关键步骤。
     @app.get('/runs/{run_id}', response_class=HTMLResponse)
     def run_page(request: Request, run_id: str):
-        """按运行编号展示持久化的分析结果或失败原因。"""
         try:
             run = storage.get_run(run_id)
             case = storage.get_case(run['case_id'])
         except KeyError as exc:
             raise HTTPException(status_code=404, detail='未找到运行记录') from exc
-        return templates.TemplateResponse(request, 'result.html', {'run': run, 'case': case})
+        elapsed_ms = None
+        if run['finished_at']:
+            elapsed_ms = round((datetime.fromisoformat(run['finished_at']) -
+                                datetime.fromisoformat(run['created_at'])).total_seconds() * 1000)
+        status_labels = {'queued': '等待分析', 'running': '分析中', 'succeeded': '分析完成',
+                         'needs_information': '待补充信息', 'failed': '分析失败', 'interrupted': '分析中断'}
+        tool_labels = {'get_ticket': '工单', 'get_order': '订单', 'get_product': '商品',
+                       'get_shipments': '物流', 'get_history': '历史记录', 'get_policy': '店铺规则'}
+        event_labels = []
+        for event in run['events']:
+            if event['event_type'] == 'tool_call':
+                name, _, status = event['summary'].partition(':')
+                event_labels.append(f'{tool_labels.get(name, "资料")}查询' +
+                                    {'found': '成功', 'not_found': '无记录', 'forbidden': '未获授权'}.get(status, '失败'))
+            elif event['event_type'] == 'run_queued':
+                event_labels.append('案例已接收')
+            elif event['event_type'] == 'run_started':
+                event_labels.append('开始分析')
+            elif event['event_type'] == 'run_finished':
+                event_labels.append('分析结束')
+        return templates.TemplateResponse(request, 'result.html',
+                                          {'run': run, 'case': case, 'elapsed_ms': elapsed_ms,
+                                           'status_label': status_labels.get(run['status'], '未知状态'),
+                                           'event_labels': event_labels})
 
     @app.get('/health')
     def health():

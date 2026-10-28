@@ -17,7 +17,7 @@ MAX_SECONDS = 90
 class AnalysisError(RuntimeError):
     SAFE_REASONS = frozenset({
         '模型输出不是 JSON 对象', '模型输出状态无效', '事实和待确认信息必须为列表',
-        '事实缺少内容或来源', '事实来源不属于当前案例', '事实来源未经过实际查询',
+        '事实缺少内容或来源', '事实缺少来源引用', '事实来源不属于当前案例', '事实来源未经过实际查询',
         '规则版本与案例不一致', '草稿声称执行了未授权业务动作',
         '未设置 DEEPSEEK_API_KEY', 'Agent 运行超时', '模型输出不是文本',
         '模型输出不是合法 JSON', '工具调用次数超限', '请求了未知工具',
@@ -36,8 +36,8 @@ class AnalysisError(RuntimeError):
         return message if message in self.SAFE_REASONS else type(self).__name__
 
 
+# 校验模型输出结构，并把已查询工具的稳定来源引用转换为展示名称。
 def validate_result(result, tools):
-    """校验模型输出结构、事实来源和禁止声称的业务动作。"""
     if not isinstance(result, dict):
         raise AnalysisError('模型输出不是 JSON 对象')
     for name in ('intent', 'verified_facts', 'missing_information', 'recommendation',
@@ -48,19 +48,18 @@ def validate_result(result, tools):
         raise AnalysisError('模型输出状态无效')
     if not isinstance(result['verified_facts'], list) or not isinstance(result['missing_information'], list):
         raise AnalysisError('事实和待确认信息必须为列表')
-    allowed_sources = {'模拟工单快照'}
-    for item in ('order', 'product', 'history', 'policy'):
-        record = tools.case.get(item)
-        if isinstance(record, dict) and record.get('source'):
-            allowed_sources.add(record['source'])
-    allowed_sources.update(item.get('source') for item in tools.case.get('shipments', []) if item.get('source'))
+    known_refs = {'get_ticket', 'get_order', 'get_product', 'get_shipments', 'get_history', 'get_policy'}
     for fact in result['verified_facts']:
-        if not isinstance(fact, dict) or not fact.get('text') or not fact.get('source'):
+        if not isinstance(fact, dict) or not fact.get('text'):
             raise AnalysisError('事实缺少内容或来源')
-        if fact['source'] not in allowed_sources:
+        ref = fact.get('source_ref')
+        if not ref:
+            raise AnalysisError('事实缺少来源引用')
+        if ref not in known_refs:
             raise AnalysisError('事实来源不属于当前案例')
-        if fact['source'] not in tools.observed_sources:
+        if ref not in tools.observed_sources:
             raise AnalysisError('事实来源未经过实际查询')
+        fact['source'] = tools.observed_sources[ref]
     policy = applicable_policy(tools.case)
     if result['policy_version'] != (policy or {}).get('policy_id'):
         raise AnalysisError('规则版本与案例不一致')
@@ -72,8 +71,8 @@ def validate_result(result, tools):
     return result
 
 
+# 让单个 LangChain Agent 查询当前案例并生成结构化分析结果。
 def analyze_ticket(case_id, run_id, tools):
-    """让单个 LangChain Agent 查询当前案例并生成分析结果。"""
     key = os.environ.get('DEEPSEEK_API_KEY')
     if not key:
         raise AnalysisError('未设置 DEEPSEEK_API_KEY')
@@ -91,10 +90,10 @@ def analyze_ticket(case_id, run_id, tools):
     }
     wrapped = []
     for name in names:
+        # 为指定的只读业务方法生成 LangChain 工具函数。
         def make_call(method_name):
-            """为指定的只读业务方法生成 LangChain 工具函数。"""
+            # 执行一次受案例范围约束的工具查询。
             def call(identifier: str) -> str:
-                """执行一次受案例范围约束的工具查询。"""
                 return json.dumps(getattr(tools, method_name)(identifier), ensure_ascii=False)
             return call
         wrapped.append(tool(name, description=f'{descriptions[name]}；identifier 为对应编号，只读')(make_call(name)))
@@ -112,10 +111,19 @@ def analyze_ticket(case_id, run_id, tools):
     for _ in range(MAX_TOOL_CALLS + 2):
         if monotonic() - started > MAX_SECONDS:
             raise AnalysisError('Agent 运行超时')
-        response = model.invoke(messages)
+        call_started = monotonic()
+        try:
+            response = model.invoke(messages)
+        except Exception:
+            tools.on_model_call('failed', {'duration_ms': round((monotonic() - call_started) * 1000),
+                                           'model': model_name})
+            raise
+        token = response.usage_metadata or {}
+        tools.on_model_call('succeeded', {'duration_ms': round((monotonic() - call_started) * 1000),
+                                          'input_tokens': token.get('input_tokens', 0),
+                                          'output_tokens': token.get('output_tokens', 0), 'model': model_name})
         if monotonic() - started > MAX_SECONDS:
             raise AnalysisError('Agent 运行超时')
-        token = response.usage_metadata or {}
         usage['input'] += token.get('input_tokens', 0)
         usage['output'] += token.get('output_tokens', 0)
         messages.append(response)

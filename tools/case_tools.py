@@ -15,20 +15,21 @@ def applicable_policy(case):
 
 
 class CaseTools:
-    def __init__(self, storage, case_id, on_call=None):
-        """绑定单个案例的只读查询范围和调用记录器。"""
+    # 绑定单个案例的只读范围，并接收工具和模型调用的观测回调。
+    def __init__(self, storage, case_id, on_call=None, on_model_call=None):
         self.case = storage.get_case(case_id)
         self.on_call = on_call or (lambda name, status: None)
-        self.observed_sources = set()
+        self.on_model_call = on_model_call or (lambda status, metrics: None)
+        self.observed_sources = {}
 
+    # 统一返回查询状态和来源引用，并拒绝跨案例编号。
     def _read(self, name, requested, expected, data, source):
-        """统一返回查询状态、来源和观察时间，并拒绝跨案例编号。"""
         status = 'forbidden' if requested != expected else ('not_found' if not data else 'found')
         if status == 'found':
-            self.observed_sources.add(source)
+            self.observed_sources[name] = source
         self.on_call(name, status)
         return {'status': status, 'data': data if status == 'found' else None,
-                'source': source, 'observed_at': self.case['metadata']['snapshot_at']}
+                'source': source, 'source_ref': name, 'observed_at': self.case['metadata']['snapshot_at']}
 
     def get_ticket(self, ticket_id):
         """按工单号读取工单与客户消息。"""
