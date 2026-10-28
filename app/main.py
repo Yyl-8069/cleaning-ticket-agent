@@ -57,6 +57,8 @@ def create_app(db_path=None, analyzer=None):
                                 datetime.fromisoformat(run['created_at'])).total_seconds() * 1000)
         status_labels = {'queued': '等待分析', 'running': '分析中', 'succeeded': '分析完成',
                          'needs_information': '待补充信息', 'failed': '分析失败', 'interrupted': '分析中断'}
+        if run['result'] and run['result'].get('review_required'):
+            status_labels['needs_information'] = '待人工复核'
         tool_labels = {'get_ticket': '工单', 'get_order': '订单', 'get_product': '商品',
                        'get_shipments': '物流', 'get_history': '历史记录', 'get_policy': '店铺规则'}
         event_labels = []

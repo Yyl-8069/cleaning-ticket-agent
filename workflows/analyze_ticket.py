@@ -18,6 +18,8 @@ def process_run(storage, run_id, analyzer, logger):
                       on_model_call=lambda status, metrics: logger.event(storage, run_id, 'model_call', status, metrics))
     try:
         result = validate_result(analyzer(run['case_id'], run_id, tools), tools)
+        for field, phrase in result.get('review_matches', {}).items():
+            logger.event(storage, run_id, 'validation_review', f'{field}:{phrase}')
         status = result['status']
         result['duration_ms'] = round((monotonic() - started) * 1000)
         storage.set_run(run_id, status, result)
@@ -27,8 +29,6 @@ def process_run(storage, run_id, analyzer, logger):
                       'output_tokens': usage.get('output', 0), 'model': result.get('model', 'test')})
     except Exception as exc:
         storage.set_run(run_id, 'failed', error_type=type(exc).__name__)
-        if isinstance(exc, AnalysisError) and exc.field and exc.rule:
-            logger.event(storage, run_id, 'validation_rejected', f'{exc.field}:{exc.rule}')
         logger.event(storage, run_id, 'run_failed',
                      exc.safe_reason if isinstance(exc, AnalysisError) else type(exc).__name__,
                      {'duration_ms': round((monotonic() - started) * 1000)})

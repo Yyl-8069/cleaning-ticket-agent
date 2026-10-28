@@ -30,19 +30,58 @@ def result():
             'status': 'needs_information'}
 
 
-# 防止草稿声称尚未执行的退款。
-def test_rejects_claimed_refund(tmp_path):
+# 未证实的完成性措辞应转交客服复核，而不让整次分析失败。
+def test_unverified_completion_claim_routes_to_safe_review(tmp_path):
+    storage, _, run_id = make_run(tmp_path)
+    logger = RunLogger(tmp_path / 'agent.jsonl')
+    # 模拟模型同时在建议和回复中错误声称退款已经完成。
+    def misleading(case_id, run_id, tools):
+        tools.get_order('ORDER-DEMO-20261022-001')
+        answer = result()
+        answer['recommendation'] = '订单已退款，建议结束工单'
+        answer['reply_draft'] = '我们已经退款，请查收'
+        return answer
+    process_run(storage, run_id, misleading, logger)
+    run = storage.get_run(run_id)
+    assert run['status'] == 'needs_information'
+    assert run['result']['review_required'] is True
+    assert '0.00' in run['result']['review_note']
+    assert '已退款' not in run['result']['recommendation']
+    assert '已经退款' not in run['result']['reply_draft']
+    assert run['events'][-1]['event_type'] == 'run_finished'
+
+
+# 有退款金额时只向客服报告订单快照数值，不推断款项到账。
+def test_review_note_reports_order_refund_amount(tmp_path):
+    case = json.loads(SAMPLE.read_text(encoding='utf-8'))
+    case['order']['refunded_amount_fen'] = 5990
+    storage = Storage(tmp_path / 'app.db')
+    case_id = storage.save_case(parse_case(json.dumps(case, ensure_ascii=False).encode('utf-8')))
+    tools = CaseTools(storage, case_id)
+    tools.get_order('ORDER-DEMO-20261022-001')
+    answer = result()
+    answer['recommendation'] = '订单已退款，请客服查看'
+    reviewed = validate_result(answer, tools)
+    assert reviewed['review_required'] is True
+    assert '累计退款 59.90 元' in reviewed['review_note']
+    assert '请核对退款流水' in reviewed['review_note']
+
+
+# 将草稿中的未核实退款断言替换为安全回复。
+def test_routes_claimed_refund_to_review(tmp_path):
     storage, case_id, _ = make_run(tmp_path)
     answer = result()
     answer['reply_draft'] = '已经退款，请查收'
     tools = CaseTools(storage, case_id)
     tools.get_order('ORDER-DEMO-20261022-001')
-    with pytest.raises(AnalysisError, match='未授权业务动作'):
-        validate_result(answer, tools)
+    reviewed = validate_result(answer, tools)
+    assert reviewed['review_required'] is True
+    assert reviewed['status'] == 'needs_information'
+    assert '已经退款' not in reviewed['reply_draft']
 
 
-# 记录命中的字段和固定禁令，便于排查误判且不保存模型原文。
-def test_rejected_claim_logs_field_and_rule_without_raw_text(tmp_path):
+# 记录待复核字段和固定禁令，且不保存模型原文。
+def test_review_claim_logs_field_and_rule_without_raw_text(tmp_path):
     storage, _, run_id = make_run(tmp_path)
     logger = RunLogger(tmp_path / 'agent.jsonl')
     # 模拟模型把禁令字样写在建议中，附加私有内容不应进入日志。
@@ -53,22 +92,23 @@ def test_rejected_claim_logs_field_and_rule_without_raw_text(tmp_path):
         return answer
     process_run(storage, run_id, flagged, logger)
     records = [json.loads(line) for line in (tmp_path / 'agent.jsonl').read_text(encoding='utf-8').splitlines()]
-    assert records[-2]['event_type'] == 'validation_rejected'
+    assert records[-2]['event_type'] == 'validation_review'
     assert records[-2]['summary'] == 'recommendation:已退款'
-    assert records[-1]['event_type'] == 'run_failed'
+    assert records[-1]['event_type'] == 'run_finished'
     assert 'private customer text' not in (tmp_path / 'agent.jsonl').read_text(encoding='utf-8')
 
 
-# 拒绝未执行动作或未证实物流结论的声明。
+# 将未执行动作或未证实物流结论的声明转为人工复核。
 @pytest.mark.parametrize('claim', ['已提交退款审批', '已发送消息', '已经签收', '已经丢件'])
-def test_rejects_unperformed_or_unverified_claims(tmp_path, claim):
+def test_reviews_unperformed_or_unverified_claims(tmp_path, claim):
     storage, case_id, _ = make_run(tmp_path)
     answer = result()
     answer['reply_draft'] = claim
     tools = CaseTools(storage, case_id)
     tools.get_order('ORDER-DEMO-20261022-001')
-    with pytest.raises(AnalysisError, match='未授权业务动作'):
-        validate_result(answer, tools)
+    reviewed = validate_result(answer, tools)
+    assert reviewed['review_required'] is True
+    assert claim not in reviewed['reply_draft']
 
 
 # 拒绝把当前案例以外的来源写成事实依据。

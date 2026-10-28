@@ -24,12 +24,6 @@ class AnalysisError(RuntimeError):
         'Agent 未在规定轮次内结束',
     })
 
-    # 保存由程序固定规则产生的诊断标签，不保存模型原文。
-    def __init__(self, message, field=None, rule=None):
-        super().__init__(message)
-        self.field = field
-        self.rule = rule
-
     # 只向页面和日志暴露白名单中的失败原因。
     @property
     def safe_reason(self):
@@ -73,10 +67,29 @@ def validate_result(result, tools):
                  '已经丢件', '已创建物流核查工单', '已经建单', '已为您退款')
     fields = {'recommendation': result['recommendation'], 'reply_draft': result['reply_draft'],
               'verified_facts': ' '.join(f['text'] for f in result['verified_facts'])}
+    matches = {}
     for field, value in fields.items():
         for phrase in forbidden:
             if phrase in value:
-                raise AnalysisError('草稿声称执行了未授权业务动作', field=field, rule=phrase)
+                matches[field] = phrase
+                break
+    if matches:
+        # shortcut: 无法从短语判定肯定、否定或引用；交客服复核时隐藏整段受影响内容。
+        result['review_required'] = True
+        result['review_matches'] = matches
+        result['status'] = 'needs_information'
+        result['verified_facts'] = [fact for fact in result['verified_facts']
+                                    if not any(phrase in fact['text'] for phrase in forbidden)]
+        result['recommendation'] = '请客服核对订单、退款及物流处理状态，确认后再处理客户诉求。'
+        result['reply_draft'] = '您好，我们正在核查订单与售后状态，确认后由客服回复您。'
+        note = '原分析含需核实的处理完成表述，已隐藏相关内容。'
+        order = tools.case.get('order')
+        if order and 'get_order' in tools.observed_sources:
+            note += (f"订单快照显示实付 {order['paid_amount_fen'] / 100:.2f} 元、"
+                     f"累计退款 {order['refunded_amount_fen'] / 100:.2f} 元；请核对退款流水。")
+        result['review_note'] = note
+        if '处理状态需客服人工复核' not in result['missing_information']:
+            result['missing_information'].append('处理状态需客服人工复核')
     return result
 
 

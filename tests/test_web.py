@@ -48,3 +48,20 @@ def test_failure_page_shows_safe_summary_and_retry(tmp_path):
     assert '重新上传' in page.text
     assert '事实来源' in page.text
     assert '+00:00' not in page.text
+
+
+# 待复核分析向客服展示安全建议和订单退款快照，不显示未经证实的断言。
+def test_review_page_shows_safe_handoff(tmp_path):
+    # 模拟模型在内部建议中写出未核实的退款结论。
+    def unsafe_analysis(case_id, run_id, tools):
+        tools.get_order('ORDER-DEMO-20261022-001')
+        answer = fake_analysis(case_id, run_id, tools)
+        answer['recommendation'] = '订单已退款，结束工单'
+        return answer
+    client = TestClient(create_app(tmp_path / 'app.db', unsafe_analysis))
+    response = client.post('/cases/upload', files={'file': ('case.json', SAMPLE.read_bytes(), 'application/json')}, follow_redirects=False)
+    page = client.get(response.headers['location'])
+    assert '待人工复核' in page.text
+    assert '累计退款 0.00 元' in page.text
+    assert '订单已退款，结束工单' not in page.text
+    assert '核对订单、退款及物流' in page.text

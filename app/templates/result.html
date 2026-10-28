@@ -6,6 +6,7 @@
 <p>分析状态：<strong>{{ status_label }}</strong> · 工单状态：<strong>{{ '待处理' if case.ticket.status == 'pending' else case.ticket.status }}</strong></p>
 <p>总耗时：<strong>{{ elapsed_ms if elapsed_ms is not none else '计算中' }}{% if elapsed_ms is not none %} ms{% endif %}</strong></p>
 {% if run.result %}{% set result = run.result %}
+{% if result.review_required %}<section><h2>待客服复核</h2><p>{{ result.review_note }}</p></section>{% endif %}
 <section><h2>用户意图</h2><p>{{ result.intent }}</p></section>
 <section><h2>事实依据</h2><ul>{% for fact in result.verified_facts %}<li>{{ fact.text }} <small>来源：{{ fact.source }}</small></li>{% endfor %}</ul></section>
 <section><h2>待确认信息</h2><ul>{% for item in result.missing_information %}<li>{{ item }}</li>{% endfor %}</ul></section>
