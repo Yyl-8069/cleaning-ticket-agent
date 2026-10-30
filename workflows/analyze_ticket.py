@@ -17,10 +17,17 @@ def process_run(storage, run_id, analyzer, logger):
                       on_call=lambda name, status: logger.event(storage, run_id, 'tool_call', f'{name}:{status}'),
                       on_model_call=lambda status, metrics: logger.event(storage, run_id, 'model_call', status, metrics))
     try:
-        result = validate_result(analyzer(run['case_id'], run_id, tools), tools)
-        for field, phrase in result.get('review_matches', {}).items():
-            logger.event(storage, run_id, 'validation_review', f'{field}:{phrase}')
-        status = result['status']
+        raw = analyzer(run['case_id'], run_id, tools)
+        result = validate_result(raw, tools)
+        result['token_usage'] = raw.get('token_usage', {'input': 0, 'output': 0})
+        result['model'] = raw.get('model', 'test')
+        result['prompt_version'] = '2.0'
+        for item in result['review_items']:
+            logger.event(storage, run_id, 'validation_review', item['field'])
+        for correction in result['decision_adjustments']:
+            logger.event(storage, run_id, 'decision_adjusted', correction)
+        status = 'succeeded'
+        result['status'] = status
         result['duration_ms'] = round((monotonic() - started) * 1000)
         storage.set_run(run_id, status, result)
         usage = result.get('token_usage') or {}

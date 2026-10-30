@@ -1,5 +1,6 @@
 """FastAPI upload and persistent result view."""
 from datetime import datetime
+from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import BackgroundTasks, FastAPI, File, HTTPException, UploadFile
@@ -17,11 +18,21 @@ ROOT = Path(__file__).resolve().parents[1]
 templates = Jinja2Templates(directory=str(ROOT / 'app' / 'templates'))
 
 
+# 组装应用；默认数据库仅在服务器启动时初始化，避免导入时中断用户任务。
 def create_app(db_path=None, analyzer=None):
-    """组装 FastAPI 应用及其存储、日志和分析依赖。"""
-    app = FastAPI(title='清洁日用品工单 Agent 1.0')
-    storage = Storage(db_path or ROOT / 'runtime' / 'app.db')
-    logger = RunLogger((Path(db_path).parent if db_path else ROOT / 'runtime') / 'agent.jsonl')
+    storage = Storage(db_path) if db_path else None
+    logger = RunLogger(Path(db_path).parent / 'agent.jsonl') if db_path else None
+
+    # 启动服务时恢复运行状态；测试显式传入隔离数据库。
+    @asynccontextmanager
+    async def lifespan(app):
+        nonlocal storage, logger
+        if storage is None:
+            storage = Storage(ROOT / 'runtime' / 'app.db')
+            logger = RunLogger(ROOT / 'runtime' / 'agent.jsonl')
+        yield
+
+    app = FastAPI(title='清洁日用品工单 Agent 1.0', lifespan=lifespan)
     analyzer = analyzer or analyze_ticket
 
     @app.get('/', response_class=HTMLResponse)

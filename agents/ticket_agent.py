@@ -7,7 +7,7 @@ from time import monotonic
 from langchain_core.messages import HumanMessage, SystemMessage, ToolMessage
 from langchain_core.tools import tool
 from langchain_openai import ChatOpenAI
-from tools.case_tools import applicable_policy
+from context.result_grounding import grounded_result
 
 PROMPTS = Path(__file__).resolve().parents[1] / 'prompts'
 MAX_TOOL_CALLS = 12
@@ -16,7 +16,7 @@ MAX_SECONDS = 90
 
 class AnalysisError(RuntimeError):
     SAFE_REASONS = frozenset({
-        '模型输出不是 JSON 对象', '模型输出状态无效', '事实和待确认信息必须为列表',
+        '模型输出不是 JSON 对象', '模型输出状态无效', '模型输出业务判断无效', '模型输出业务动作无效', '事实和待确认信息必须为列表',
         '事实缺少内容或来源', '事实缺少来源引用', '事实来源不属于当前案例', '事实来源未经过实际查询',
         '规则版本与案例不一致', '草稿声称执行了未授权业务动作',
         '未设置 DEEPSEEK_API_KEY', 'Agent 运行超时', '模型输出不是文本',
@@ -36,61 +36,14 @@ class AnalysisError(RuntimeError):
         return message if message in self.SAFE_REASONS else type(self).__name__
 
 
-# 校验模型输出结构，并把已查询工具的稳定来源引用转换为展示名称。
+# 校验有限业务决策，并从实际查询结果生成事实和安全回复。
 def validate_result(result, tools):
-    if not isinstance(result, dict):
-        raise AnalysisError('模型输出不是 JSON 对象')
-    for name in ('intent', 'verified_facts', 'missing_information', 'recommendation',
-                 'reply_draft', 'policy_version', 'status'):
-        if name not in result:
-            raise AnalysisError(f'模型输出缺少 {name}')
-    if result['status'] not in ('succeeded', 'needs_information'):
-        raise AnalysisError('模型输出状态无效')
-    if not isinstance(result['verified_facts'], list) or not isinstance(result['missing_information'], list):
-        raise AnalysisError('事实和待确认信息必须为列表')
-    known_refs = {'get_ticket', 'get_order', 'get_product', 'get_shipments', 'get_history', 'get_policy'}
-    for fact in result['verified_facts']:
-        if not isinstance(fact, dict) or not fact.get('text'):
-            raise AnalysisError('事实缺少内容或来源')
-        ref = fact.get('source_ref')
-        if not ref:
-            raise AnalysisError('事实缺少来源引用')
-        if ref not in known_refs:
-            raise AnalysisError('事实来源不属于当前案例')
-        if ref not in tools.observed_sources:
-            raise AnalysisError('事实来源未经过实际查询')
-        fact['source'] = tools.observed_sources[ref]
-    policy = applicable_policy(tools.case)
-    if result['policy_version'] != (policy or {}).get('policy_id'):
-        raise AnalysisError('规则版本与案例不一致')
-    forbidden = ('已退款', '已经退款', '已提交退款审批', '已发送消息', '已经签收',
-                 '已经丢件', '已创建物流核查工单', '已经建单', '已为您退款')
-    fields = {'recommendation': result['recommendation'], 'reply_draft': result['reply_draft'],
-              'verified_facts': ' '.join(f['text'] for f in result['verified_facts'])}
-    matches = {}
-    for field, value in fields.items():
-        for phrase in forbidden:
-            if phrase in value:
-                matches[field] = phrase
-                break
-    if matches:
-        # shortcut: 无法从短语判定肯定、否定或引用；交客服复核时隐藏整段受影响内容。
-        result['review_required'] = True
-        result['review_matches'] = matches
-        result['status'] = 'needs_information'
-        result['verified_facts'] = [fact for fact in result['verified_facts']
-                                    if not any(phrase in fact['text'] for phrase in forbidden)]
-        result['recommendation'] = '请客服核对订单、退款及物流处理状态，确认后再处理客户诉求。'
-        result['reply_draft'] = '您好，我们正在核查订单与售后状态，确认后由客服回复您。'
-        note = '原分析含需核实的处理完成表述，已隐藏相关内容。'
-        order = tools.case.get('order')
-        if order and 'get_order' in tools.observed_sources:
-            note += (f"订单快照显示实付 {order['paid_amount_fen'] / 100:.2f} 元、"
-                     f"累计退款 {order['refunded_amount_fen'] / 100:.2f} 元；请核对退款流水。")
-        result['review_note'] = note
-        if '处理状态需客服人工复核' not in result['missing_information']:
-            result['missing_information'].append('处理状态需客服人工复核')
-    return result
+    try:
+        answer = grounded_result(result, tools)
+    except ValueError as exc:
+        raise AnalysisError(str(exc)) from exc
+    # 用量字段由调用层记录，不由模型输出决定。
+    return answer
 
 
 # 让单个 LangChain Agent 查询当前案例并生成结构化分析结果。
@@ -157,7 +110,8 @@ def analyze_ticket(case_id, run_id, tools):
                 result = json.loads(content.strip().removeprefix('```json').removesuffix('```').strip())
             except json.JSONDecodeError as exc:
                 raise AnalysisError('模型输出不是合法 JSON') from exc
-            result = validate_result(result, tools)
+            if not isinstance(result, dict):
+                raise AnalysisError('模型输出不是 JSON 对象')
             result['token_usage'] = usage
             result['model'] = model_name
             return result

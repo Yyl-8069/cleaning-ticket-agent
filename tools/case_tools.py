@@ -21,15 +21,18 @@ class CaseTools:
         self.on_call = on_call or (lambda name, status: None)
         self.on_model_call = on_model_call or (lambda status, metrics: None)
         self.observed_sources = {}
+        self.observed_results = {}
 
     # 统一返回查询状态和来源引用，并拒绝跨案例编号。
     def _read(self, name, requested, expected, data, source):
         status = 'forbidden' if requested != expected else ('not_found' if not data else 'found')
         if status == 'found':
             self.observed_sources[name] = source
+        result = {'status': status, 'data': data if status == 'found' else None,
+                  'source': source, 'source_ref': name, 'observed_at': self.case['metadata']['snapshot_at']}
+        self.observed_results[name] = result
         self.on_call(name, status)
-        return {'status': status, 'data': data if status == 'found' else None,
-                'source': source, 'source_ref': name, 'observed_at': self.case['metadata']['snapshot_at']}
+        return result
 
     def get_ticket(self, ticket_id):
         """按工单号读取工单与客户消息。"""
