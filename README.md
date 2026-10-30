@@ -72,3 +72,7 @@ python -m evals.run_evals --live
 初学者按 [Git 入门](docs/Git入门.md) 逐步操作。
 
 项目已是独立 Git 仓库。先执行 `git status`、`git diff --check`、上面的测试与评估，确认 `.env`、`runtime/` 不在暂存区，再 `git add .`、`git diff --cached --stat`、`git commit -m "实现工单 Agent 1.0"`。上传需要你自己的远端仓库地址；取得地址后执行 `git remote add origin <仓库地址>` 和 `git push -u origin develop`。如果远端已有提交，需要先核对分支和历史，不能盲目强推。
+
+## 开发助手
+
+已配置四个项目级 Agency Agents 角色：AI Engineer、Backend Architect、Frontend Developer、API Tester，用于开发辅助与审查。使用方法、发现范围、来源和第三方许可见 [Agency Agents 接入](<docs/Agency Agents接入.md>)。产品运行时仍使用现有单Agent工作流。
