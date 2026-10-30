@@ -16,6 +16,10 @@ from workflows.analyze_ticket import process_run
 
 ROOT = Path(__file__).resolve().parents[1]
 templates = Jinja2Templates(directory=str(ROOT / 'app' / 'templates'))
+SOURCE_LABELS = {
+    'get_ticket': '工单资料', 'get_order': '订单资料', 'get_product': '商品目录',
+    'get_shipments': '物流记录', 'get_history': '售后记录', 'get_policy': '店铺规则',
+}
 
 
 # 组装应用；默认数据库仅在服务器启动时初始化，避免导入时中断用户任务。
@@ -54,7 +58,7 @@ def create_app(db_path=None, analyzer=None):
         background_tasks.add_task(process_run, storage, run_id, analyzer, logger)
         return RedirectResponse(f'/runs/{run_id}', status_code=303)
 
-    # 展示最新运行状态及结果，禁用缓存以避免自动刷新读到旧状态。
+    # 以正式来源名称展示最新结果，保留原始溯源并禁用旧状态缓存。
     @app.get('/runs/{run_id}', response_class=HTMLResponse)
     def run_page(request: Request, run_id: str):
         try:
@@ -62,6 +66,8 @@ def create_app(db_path=None, analyzer=None):
             case = storage.get_case(run['case_id'])
         except KeyError as exc:
             raise HTTPException(status_code=404, detail='未找到运行记录') from exc
+        display_facts = [dict(fact, source_label=SOURCE_LABELS.get(fact.get('source_ref'), '上传资料'))
+                         for fact in (run['result'] or {}).get('verified_facts', [])]
         elapsed_ms = None
         if run['finished_at']:
             elapsed_ms = round((datetime.fromisoformat(run['finished_at']) -
@@ -79,7 +85,7 @@ def create_app(db_path=None, analyzer=None):
                 event_labels.append(f'{tool_labels.get(name, "资料")}查询' +
                                     {'found': '成功', 'not_found': '无记录', 'forbidden': '未获授权'}.get(status, '失败'))
             elif event['event_type'] == 'run_queued':
-                event_labels.append('案例已接收')
+                event_labels.append('工单已接收')
             elif event['event_type'] == 'run_started':
                 event_labels.append('开始分析')
             elif event['event_type'] == 'run_finished':
@@ -87,7 +93,7 @@ def create_app(db_path=None, analyzer=None):
         return templates.TemplateResponse(request, 'result.html',
                                           {'run': run, 'case': case, 'elapsed_ms': elapsed_ms,
                                            'status_label': status_labels.get(run['status'], '未知状态'),
-                                           'event_labels': event_labels},
+                                           'event_labels': event_labels, 'display_facts': display_facts},
                                           headers={'Cache-Control': 'no-store'})
 
     @app.get('/health')

@@ -11,14 +11,14 @@
 {% if result.action_labels %}<section><h2>业务下一步</h2><ul>{% for label in result.action_labels %}<li>{{ label }}</li>{% endfor %}</ul><small>这些是建议步骤，尚未执行；不等于分析失败。</small></section>{% endif %}
 {% if result.review_required %}<section><h2>待客服复核</h2><p>{{ result.review_note }}</p></section>{% endif %}
 <section><h2>用户意图</h2><p>{{ result.intent }}</p></section>
-<section><h2>事实依据</h2><ul>{% for fact in result.verified_facts %}<li>{{ fact.text }} <small>来源：{{ fact.source }}</small></li>{% endfor %}</ul></section>
+<section><h2>事实依据</h2><ul>{% for fact in display_facts %}<li>{{ fact.text }} <small>来源：{{ fact.source_label }}</small></li>{% endfor %}</ul><p><small>来源说明：本次上传的工单资料。</small></p></section>
 <section><h2>待确认信息</h2><ul>{% for item in result.missing_information %}<li>{{ item }}</li>{% endfor %}</ul></section>
-<section><h2>处理建议</h2><p>{{ result.recommendation }}</p><small>模拟规则版本：{{ result.policy_version or '当前未取得适用规则' }}</small></section>
+<section><h2>处理建议</h2><p>{{ result.recommendation }}</p><small>规则版本：{{ result.policy_version or '当前未取得适用规则' }}</small></section>
 <section><h2>回复草稿</h2><p>{{ result.reply_draft }}</p><small>仅供客服确认，尚未发送</small></section>
 {% elif run.error_type %}
 <section><h2>分析失败</h2><p>{{ run.events[-1].summary if run.events else run.error_type }}</p><p>请重新上传案例重试；若仍失败，请人工核查。</p><a href="/">重新上传</a></section>
 {% elif run.status == 'queued' or run.status == 'running' %}<p>正在分析，页面每 2 秒自动更新，完成后将自动展示结果。</p>{% endif %}
 <section><h2>处理步骤</h2><ul>{% for label in event_labels %}<li>{{ label }}</li>{% endfor %}</ul></section>
 <details><summary>运行编号</summary><code>{{ run.id }}</code></details>
-<p><small>模拟案例；分析完成不等于客户问题解决。</small></p>
+<p><small>分析完成不等于客户问题解决。</small></p>
 </body></html>
