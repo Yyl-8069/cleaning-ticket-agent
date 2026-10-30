@@ -54,7 +54,7 @@ def create_app(db_path=None, analyzer=None):
         background_tasks.add_task(process_run, storage, run_id, analyzer, logger)
         return RedirectResponse(f'/runs/{run_id}', status_code=303)
 
-    # 将持久化运行记录整理为用户可读的状态、耗时和关键步骤。
+    # 展示最新运行状态及结果，禁用缓存以避免自动刷新读到旧状态。
     @app.get('/runs/{run_id}', response_class=HTMLResponse)
     def run_page(request: Request, run_id: str):
         try:
@@ -87,7 +87,8 @@ def create_app(db_path=None, analyzer=None):
         return templates.TemplateResponse(request, 'result.html',
                                           {'run': run, 'case': case, 'elapsed_ms': elapsed_ms,
                                            'status_label': status_labels.get(run['status'], '未知状态'),
-                                           'event_labels': event_labels})
+                                           'event_labels': event_labels},
+                                          headers={'Cache-Control': 'no-store'})
 
     @app.get('/health')
     def health():

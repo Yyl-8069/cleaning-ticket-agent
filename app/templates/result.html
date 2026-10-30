@@ -1,6 +1,7 @@
 <!doctype html>
 <html lang="zh-CN">
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>工单分析结果</title>
+{% if run.status in ('queued', 'running') %}<meta http-equiv="refresh" content="2">{% endif %}
 <style>body{font:16px/1.6 system-ui;max-width:900px;margin:2rem auto;padding:0 1rem;color:#17212b}section{border:1px solid #ccd5dc;border-radius:10px;padding:1rem 1.5rem;margin:1rem 0}small{color:#596673}li{margin:.4rem 0}a{color:#145ca8}</style></head>
 <body><a href="/">← 返回上传页</a><h1>工单分析</h1>
 <p>分析状态：<strong>{{ status_label }}</strong> · 工单状态：<strong>{{ '待处理' if case.ticket.status == 'pending' else case.ticket.status }}</strong></p>
@@ -16,7 +17,7 @@
 <section><h2>回复草稿</h2><p>{{ result.reply_draft }}</p><small>仅供客服确认，尚未发送</small></section>
 {% elif run.error_type %}
 <section><h2>分析失败</h2><p>{{ run.events[-1].summary if run.events else run.error_type }}</p><p>请重新上传案例重试；若仍失败，请人工核查。</p><a href="/">重新上传</a></section>
-{% elif run.status == 'queued' or run.status == 'running' %}<p>正在分析，请稍后刷新页面。</p>{% endif %}
+{% elif run.status == 'queued' or run.status == 'running' %}<p>正在分析，页面每 2 秒自动更新，完成后将自动展示结果。</p>{% endif %}
 <section><h2>处理步骤</h2><ul>{% for label in event_labels %}<li>{{ label }}</li>{% endfor %}</ul></section>
 <details><summary>运行编号</summary><code>{{ run.id }}</code></details>
 <p><small>模拟案例；分析完成不等于客户问题解决。</small></p>

@@ -1,4 +1,8 @@
 from pathlib import Path
+from html.parser import HTMLParser
+import json
+
+import pytest
 from fastapi.testclient import TestClient
 from app.main import create_app
 
@@ -99,3 +103,72 @@ def test_default_app_storage_is_deferred_until_server_start(monkeypatch):
         raise AssertionError('不能在服务器启动前初始化真实数据库')
     monkeypatch.setattr(module, 'Storage', fail)
     assert module.create_app() is not None
+
+
+# 分析中持续刷新当前结果页，所有终态停止；GET不能创建新的运行。
+@pytest.mark.parametrize('status,refresh_expected', [
+    ('queued', True), ('running', True), ('succeeded', False),
+    ('needs_information', False), ('failed', False), ('interrupted', False),
+])
+def test_result_auto_refresh_only_for_pending_runs(tmp_path, status, refresh_expected):
+    from app.storage import Storage
+    calls = []
+
+    # 只读页面请求不应触发分析器。
+    def unexpected_analysis(*args):
+        calls.append(args)
+        raise AssertionError('页面刷新不能重新调用模型')
+
+    # 按HTML属性解析刷新配置，不依赖模板的空格或属性顺序。
+    class RefreshParser(HTMLParser):
+        # 只收集页面中声明的刷新标签。
+        def __init__(self):
+            super().__init__()
+            self.refreshes = []
+
+        # 提取刷新间隔，避免测试只检查包含某个单词。
+        def handle_starttag(self, tag, attrs):
+            attributes = dict(attrs)
+            if tag == 'meta' and attributes.get('http-equiv', '').lower() == 'refresh':
+                self.refreshes.append(attributes.get('content'))
+
+    path = tmp_path / 'app.db'
+    client = TestClient(create_app(path, unexpected_analysis))
+    storage = Storage(path)
+    case_id = storage.save_case(json.loads(SAMPLE.read_text(encoding='utf-8')))
+    run_id = storage.create_run(case_id)
+    storage.set_run(run_id, status, error_type='AnalysisError' if status == 'failed' else None)
+    for _ in range(2):
+        response = client.get(f'/runs/{run_id}')
+        assert response.status_code == 200
+        assert response.headers.get('cache-control') == 'no-store'
+        parser = RefreshParser()
+        parser.feed(response.text)
+        assert parser.refreshes == (['2'] if refresh_expected else [])
+        if refresh_expected:
+            assert '自动更新' in response.text
+    assert calls == []
+    with storage._db() as db:
+        assert db.execute('SELECT COUNT(*) FROM runs').fetchone()[0] == 1
+        assert db.execute('SELECT COUNT(*) FROM events').fetchone()[0] == 0
+
+
+# 同一个运行由分析中转为完成后，下一次自动请求即可展示结果并停止刷新。
+def test_auto_refresh_displays_result_when_run_finishes(tmp_path):
+    from app.storage import Storage
+    path = tmp_path / 'app.db'
+    client = TestClient(create_app(path, fake_analysis))
+    storage = Storage(path)
+    case_id = storage.save_case(json.loads(SAMPLE.read_text(encoding='utf-8')))
+    run_id = storage.create_run(case_id)
+    storage.set_run(run_id, 'running')
+    assert 'http-equiv="refresh"' in client.get(f'/runs/{run_id}').text
+    storage.set_run(run_id, 'succeeded', {
+        'intent': '查询物流', 'verified_facts': [], 'missing_information': [],
+        'recommendation': '核查物流进度', 'reply_draft': '我们会核查配送进度。',
+        'policy_version': None,
+    })
+    page = client.get(f'/runs/{run_id}')
+    assert '核查配送进度' in page.text
+    assert '分析完成' in page.text
+    assert 'http-equiv="refresh"' not in page.text
