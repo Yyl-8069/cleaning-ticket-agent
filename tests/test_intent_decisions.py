@@ -71,3 +71,39 @@ def test_relative_deadline_requires_exact_message_anchor():
     assert evaluate_condition(condition, tools)['state'] == 'unknown'
     tools.observed_results['get_shipments']['status'] = 'forbidden'
     assert evaluate_condition(condition, tools)['state'] == 'unknown'
+
+
+# 日期与退款同现不代表日期属于送达期限，避免把漏液条件误判为物流条件。
+def test_unrelated_date_cannot_anchor_delivery_condition():
+    shipment = {'order_id': 'O1', 'status': 'in_transit', 'signed_at': None,
+                'events': [{'at': '2026-10-27T09:00:00+08:00', 'status': 'in_transit'}]}
+    tools = observations('我在2026-10-26T18:00:00+08:00买的，如果瓶子漏液就退款。', shipments=[shipment])
+    condition = {'kind': 'not_delivered_by', 'deadline': '2026-10-26T18:00:00+08:00', 'evidence_refs': ['get_ticket']}
+    assert evaluate_condition(condition, tools)['state'] == 'unknown'
+
+# 未来、无效或缺失的客户消息时间都不能成为退款条件依据。
+@pytest.mark.parametrize('created', [None, 'invalid', '2099-01-01T10:00:00+08:00'])
+def test_condition_rejects_untrusted_message_time(created):
+    tools = observations('2026-10-28T18:00:00+08:00还没送到就退款')
+    tools.observed_results['get_ticket']['data']['messages'][0]['created_at'] = created
+    condition = {'kind': 'not_delivered_by', 'deadline': '2026-10-28T18:00:00+08:00', 'evidence_refs': ['get_ticket']}
+    assert evaluate_condition(condition, tools)['state'] == 'unknown'
+
+# 更新后的客户条件取代旧说法，不能继续按历史条件自动认定成立。
+def test_later_customer_message_invalidates_old_condition_anchor():
+    shipment = {'order_id': 'O1', 'status': 'in_transit', 'signed_at': None,
+                'events': [{'at': '2026-10-27T09:00:00+08:00', 'status': 'in_transit'}]}
+    tools = observations('2026-10-26T18:00:00+08:00还没送到就退款', shipments=[shipment])
+    tools.observed_results['get_ticket']['data']['messages'].append({'role': 'customer',
+        'content': '先不要退款了，我只查物流。', 'created_at': '2026-10-27T09:30:00+08:00'})
+    condition = {'kind': 'not_delivered_by', 'deadline': '2026-10-26T18:00:00+08:00', 'evidence_refs': ['get_ticket']}
+    assert evaluate_condition(condition, tools)['state'] == 'unknown'
+
+# 签收早于发货或与后续运输记录冲突时，不得据此否定退款条件。
+def test_inconsistent_signed_evidence_is_unknown():
+    shipment = {'order_id': 'O1', 'status': 'delivered', 'signed_at': '2026-10-01T17:00:00+08:00',
+                'events': [{'at': '2026-10-27T09:00:00+08:00', 'status': 'in_transit'}]}
+    tools = observations('2026-10-26T18:00:00+08:00还没送到就退款', shipments=[shipment])
+    tools.observed_results['get_order']['data']['order']['shipped_at'] = '2026-10-23T09:00:00+08:00'
+    condition = {'kind': 'not_delivered_by', 'deadline': '2026-10-26T18:00:00+08:00', 'evidence_refs': ['get_ticket']}
+    assert evaluate_condition(condition, tools)['state'] == 'unknown'

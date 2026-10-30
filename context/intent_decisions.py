@@ -1,4 +1,5 @@
 """校验有限诉求结构，并独立核实退款条件；不提供资金操作。"""
+import re
 from datetime import datetime, time, timedelta
 
 
@@ -44,24 +45,65 @@ def aware_time(value):
         return None
 
 
-# 将条件截止时间与客户原文关联，拒绝模型凭空设置的截止时间。
-def anchored_deadline(deadline, messages):
-    for message in messages:
-        if message.get('role') != 'customer':
-            continue
-        content = message.get('content', '')
-        if not isinstance(content, str) or '退款' not in content:
-            continue
-        if deadline.isoformat() in content:
-            return True
-        created = aware_time(message.get('created_at'))
-        if created is None:
-            continue
-        for word, offset in (('今天', 0), ('明天', 1)):
-            candidate = datetime.combine(created.date() + timedelta(days=offset), time(23, 59, 59), created.tzinfo)
-            if word in content and deadline == candidate:
-                return True
-    return False
+# 仅匹配最新客户消息中的单一明确送达条件，复杂或冲突表达保留未知。
+def anchored_deadline(deadline, messages, snapshot):
+    customers = [m for m in messages if isinstance(m, dict) and m.get('role') == 'customer']
+    if not customers:
+        return False
+    dated = [(aware_time(m.get('created_at')), m) for m in customers]
+    if any(moment is None or moment > snapshot for moment, _ in dated):
+        return False
+    latest = max(moment for moment, _ in dated)
+    current = [m for moment, m in dated if moment == latest]
+    if len(current) != 1:
+        return False
+    content = current[0].get('content', '')
+    if not isinstance(content, str) or content.count('退款') != 1:
+        return False
+    if re.search(r'不是|取消|撤回|不退款|不要退款|暂不|不用|[“”"「」]', content):
+        return False
+    date_pattern = r'今天|明天|\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:Z|[+-]\d{2}:\d{2})'
+    if len(re.findall(date_pattern, content)) != 1:
+        return False
+    pattern = (r'(?P<when>' + date_pattern + r')\s*(?:之前|前)?\s*(?:还)?'
+               r'(?:没(?:有)?(?:收到|送到)|(?:收|送)不到|不到(?=就|[，,]))'
+               r'[^。！？!?；;\n]{0,24}?退款')
+    matched = re.search(pattern, content)
+    if matched is None:
+        return False
+    token = matched.group('when')
+    if token not in ('今天', '明天'):
+        return aware_time(token) == deadline
+    try:
+        candidate = datetime.combine(latest.date() + timedelta(days=token == '明天'), time(23, 59, 59), latest.tzinfo)
+    except OverflowError:
+        return False
+    return candidate == deadline
+
+
+# 共用签收核验：校验订单关联、发货与签收先后及轨迹时间，矛盾证据不作事实。
+def valid_signed_time(shipment, order, snapshot):
+    if (not order or shipment.get('order_id') != order.get('order_id')
+            or shipment.get('status') != 'delivered'):
+        return None
+    signed = aware_time(shipment.get('signed_at'))
+    if signed is None or signed > snapshot:
+        return None
+    for source, field in ((order, 'paid_at'), (order, 'shipped_at'), (shipment, 'shipped_at')):
+        if source.get(field) is not None:
+            moment = aware_time(source[field])
+            if moment is None or moment > signed:
+                return None
+    events = shipment.get('events', [])
+    if not isinstance(events, list):
+        return None
+    for event in events:
+        moment = aware_time(event.get('at')) if isinstance(event, dict) else None
+        if moment is None or moment > signed:
+            return None
+        if moment == signed and event.get('status') == 'in_transit':
+            return None
+    return signed
 
 
 # 用本轮资料核实送达期限条件，缺少记录不能直接当作未送达证据。
@@ -75,7 +117,7 @@ def evaluate_condition(condition, tools) -> dict:
     deadline = aware_time(condition.get('deadline'))
     ticket = tools.observed_results.get('get_ticket', {})
     if (snapshot is None or deadline is None or ticket.get('status') != 'found'
-            or not anchored_deadline(deadline, (ticket.get('data') or {}).get('messages', []))):
+            or not anchored_deadline(deadline, (ticket.get('data') or {}).get('messages', []), snapshot)):
         return unknown
     if deadline > snapshot:
         return {'state': 'unmet', 'reason': '依据客户消息确定的截止时间尚未到达，不代表未来一定送达。'}
@@ -91,9 +133,9 @@ def evaluate_condition(condition, tools) -> dict:
     for shipment in shipments:
         if not isinstance(shipment, dict) or shipment.get('order_id') != order['order_id']:
             return unknown
-        signed = aware_time(shipment.get('signed_at'))
         if shipment.get('status') == 'delivered':
-            if signed is None or signed > snapshot:
+            signed = valid_signed_time(shipment, order, snapshot)
+            if signed is None:
                 return unknown
             states.append('unmet' if signed <= deadline else 'met')
             continue

@@ -1,6 +1,6 @@
 """把模型的有限业务判断与已查询事实组合成可交给客服的安全结果。"""
 from datetime import datetime
-from context.intent_decisions import normalize_decisions, evaluate_condition
+from context.intent_decisions import normalize_decisions, evaluate_condition, valid_signed_time
 
 ISSUES = {
     'shipping_delay': '物流停滞或配送进度查询',
@@ -136,7 +136,9 @@ def grounded_issue(raw, tools):
     if shipments:
         statuses = [s.get('status') for s in shipments]
         fact('shipment_statuses', statuses, '物流快照状态：' + '、'.join(str(s) for s in statuses) + '。', 'get_shipments')
-        delivered = all(s.get('status') == 'delivered' and past_time(s.get('signed_at'), snapshot) for s in shipments)
+        delivered = all(valid_signed_time(s, order, snapshot) for s in shipments)
+        if any(s.get('status') == 'delivered' and not valid_signed_time(s, order, snapshot) for s in shipments):
+            review.append({'field': 'delivery_evidence', 'reason': '签收时间、订单或轨迹存在矛盾，不能据此确认有效签收，请核对。'})
         fact('delivery_recorded', bool(delivered),
              '物流记录显示已签收；不证明实收商品数量或完好。' if delivered else '当前物流记录不能确认全部包裹已签收。', 'get_shipments')
         event_times, invalid_events = [], False
@@ -223,7 +225,9 @@ def grounded_issue(raw, tools):
             recommendation.append('记录显示已全额退款，请说明历史退款记录，不要重复发起退款。')
             reply.append('流水显示退款成功，但当前资料无法确认到账，请查看原支付渠道的退款记录。')
         elif can_request_refund:
-            recommendation.append('记录客户明确的退款申请，交客服结合订单和适用规则审核；本次未执行退款。')
+            recommendation.append('记录客户明确的退款申请，交客服结合订单和适用规则审核；本次未执行退款。'
+                                  if refund_intent == 'requested' else
+                                  '记录客户有条件退款诉求及条件核实依据，交客服审核；本次未执行退款。')
             reply.append('您的退款诉求需要客服根据订单及适用规则审核，当前回复不代表退款获批。')
         else:
             recommendation.append('请先确认退款意向及订单退款记录，确认前不提交审核或执行退款。')

@@ -93,3 +93,18 @@ def test_condition_rejects_unobserved_evidence(tmp_path):
     raw = decision()
     raw['condition'] = {'kind': 'not_delivered_by', 'deadline': None, 'evidence_refs': ['refund_api']}
     with pytest.raises(AnalysisError): validate_result({'issues': [raw]}, tools)
+
+
+# 条件成立仍不等于客户现在明确申请，建议中不能偷换意向。
+def test_met_condition_not_rewritten_as_explicit_request(tmp_path):
+    # 复现条件已到且运输仍在继续的快照。
+    def change(case):
+        case['messages'][0]['content'] = '2026-10-26T18:00:00+08:00还没送到就退款'
+        case['shipments'][0]['events'].append({'at': '2026-10-27T09:00:00+08:00', 'status': 'in_transit'})
+    tools = prepare(tmp_path, change=change)
+    raw = decision('refund_request', ['human_approval'], 'conditional')
+    raw['condition'] = {'kind': 'not_delivered_by', 'deadline': '2026-10-26T18:00:00+08:00', 'evidence_refs': ['get_ticket']}
+    answer = validate_result({'issues': [raw]}, tools)
+    assert answer['issues'][0]['human_required'] is True
+    assert '明确的退款申请' not in answer['recommendation']
+    assert answer['issues'][0]['refund_intent'] == 'conditional'

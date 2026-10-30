@@ -234,3 +234,13 @@ def test_future_condition_handles_current_shipping_first(tmp_path):
     assert 'human_approval' not in issue['next_actions']
     assert 'request_information' not in issue['next_actions']
     assert '确认目前是否希望申请退款' not in answer['reply_draft']
+
+
+# 共用事实区同样不能把早于发货的签收时间当作有效签收。
+def test_invalid_delivery_chronology_not_presented_as_fact(tmp_path):
+    # 将签收改到发货前，保留其余真实查询结构。
+    def change(case):
+        case['shipments'][0]['signed_at'] = '2026-10-01T10:00:00+08:00'
+    answer = validate_result(decision('leak', ['request_information'], 'none'), prepare(tmp_path, 4, change))
+    assert answer['facts']['delivery_recorded'] is False
+    assert any(v['field'] == 'delivery_evidence' for v in answer['review_items'])

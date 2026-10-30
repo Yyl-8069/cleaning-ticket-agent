@@ -19,3 +19,15 @@
 - Live validation: DEEPSEEK_API_KEY absent in current process (presence-only check); no new model calls, no claim of model quality or semantic review completion.
 - Original six inputs and legacy expectations preserved. Added nine separate multi-intent and security cases.
 - Task 4: implementation and offline checks complete; live validation pending external key availability. Final whole-branch review follows.
+
+
+## 最终独立审查与一次修正
+
+- Reviewer: 独立只读审查（gpt-6-astra），范围 c47c65b..b661517；审查实际调用链并复现，无生产资金工具。初始结论需修正条件判断后再交付。
+- Findings: P1 日期和退款同现误作送达条件；P1 签收早于发货或与轨迹矛盾仍认作有效；P2 未来消息当相对日期基准；P2 已满足条件意向被称为明确申请。
+- RED: 7条条件及意向测试失败，另1条共用签收事实测试失败；均命中真实断言而非环境问题。
+- GREEN: 共用 valid_signed_time 校验关联、发货/签收和轨迹时间；条件仅接受最新有效客户消息中的单一明确表达；含糊或撤回未知；条件成立仍保留 conditional 意向。117条测试通过，20输入与20预设判断回放通过。
+- Ruling: 最新消息之外的旧条件不自动继承；表达复杂或多日期时宁可未知，避免把语义猜测当成事实。代价是部分正常复杂工单需客服确认，不具备通用条件解析能力。
+- Declined-to-judge rulings: 真实模型识别/抗注入识别率和费用未验证；平台数据认证不具备；真实退款/审批/派单无执行能力；图片识别、复杂条件和定时检查不在本轮范围。没有将这些排除项冒称已实现。
+- Ruling: 不做合并、推送或部署，保留 develop 现有工作目录及本地提交；用户当前授权为本地实现。
+- Final live/manual semantic validation remains pending: current process has no key. All safety claims limited to tested code boundaries, not universal injection detection.
