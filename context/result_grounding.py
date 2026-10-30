@@ -229,7 +229,7 @@ def grounded_issue(raw, tools):
                                   if refund_intent == 'requested' else
                                   '记录客户有条件退款诉求及条件核实依据，交客服审核；本次未执行退款。')
             reply.append('您的退款诉求需要客服根据订单及适用规则审核，当前回复不代表退款获批。')
-        else:
+        elif refund_intent != 'conditional':
             recommendation.append('请先确认退款意向及订单退款记录，确认前不提交审核或执行退款。')
             reply.append('需要先确认您的退款意向及订单记录，再确定下一步处理。')
 
@@ -274,7 +274,7 @@ def grounded_issue(raw, tools):
             'intent': ISSUES[issue], 'facts': facts, 'verified_facts': verified,
             'missing_information': missing, 'next_actions': actions,
             'action_labels': [ACTIONS[a] for a in actions], 'review_items': review,
-            'recommendation': ' '.join(recommendation), 'reply_draft': ''.join(reply),
+            'recommendation': ' '.join(recommendation), 'reply_draft': ''.join(reply), '_reply_parts': reply,
             'policy_version': (policy or {}).get('policy_id'), 'status': 'succeeded',
             'evidence_refs': list(dict.fromkeys(raw['evidence_refs']))}
 
@@ -282,7 +282,11 @@ def grounded_issue(raw, tools):
 # 分别核实每项诉求，再汇总共享事实与客服结果，单项人工处理不阻断其余项。
 def grounded_result(raw, tools):
     decisions = normalize_decisions(raw)
-    results = [grounded_issue(item, tools) for item in decisions]
+    results, reply_parts = [], []
+    for item in decisions:
+        result = grounded_issue(item, tools)
+        reply_parts.extend(result.pop('_reply_parts'))
+        results.append(result)
     answer = dict(results[0])
     answer['schema_version'] = 3
     answer['issues'] = results
@@ -298,6 +302,7 @@ def grounded_result(raw, tools):
     answer['facts'] = {key: value for result in results for key, value in result['facts'].items()}
     answer['intent'] = '；'.join(dict.fromkeys(result['intent'] for result in results))
     answer['recommendation'] = ' '.join(dict.fromkeys(result['recommendation'] for result in results))
-    answer['reply_draft'] = ' '.join(dict.fromkeys(result['reply_draft'] for result in results))
+    # 按生成时的完整片段去重，避免重复开头，也避免按句号切分破坏小数金额。
+    answer['reply_draft'] = ''.join(dict.fromkeys(reply_parts))
     answer['human_required'] = any(result['human_required'] for result in results)
     return answer

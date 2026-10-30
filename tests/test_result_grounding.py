@@ -244,3 +244,27 @@ def test_invalid_delivery_chronology_not_presented_as_fact(tmp_path):
     answer = validate_result(decision('leak', ['request_information'], 'none'), prepare(tmp_path, 4, change))
     assert answer['facts']['delivery_recorded'] is False
     assert any(v['field'] == 'delivery_evidence' for v in answer['review_items'])
+
+
+# 多诉求共享问候和金额仅出现一次，重复运行也不能叠加草稿。
+@pytest.mark.parametrize('refund', ['requested', 'conditional'])
+def test_multi_reply_shares_intro_and_keeps_each_issue(tmp_path, refund):
+    tools = prepare(tmp_path)
+    second = decision('refund_request', ['human_approval'] if refund == 'requested' else ['reply'], refund)
+    if refund == 'conditional':
+        second['condition'] = {'kind': 'not_delivered_by', 'deadline': '2026-10-27T23:59:59+08:00',
+                               'evidence_refs': ['get_ticket']}
+    raw = {'issues': [decision('shipping_delay', ['check_logistics'], 'none'), second]}
+    answer = validate_result(raw, tools)
+    reply = answer['reply_draft']
+    assert reply.count('您好。') == 1
+    assert reply.count('实付 59.90 元') == 1
+    assert reply.count('累计退款 0.00 元') == 1
+    assert '配送进度' in reply
+    if refund == 'requested':
+        assert '审核' in reply and '不代表退款获批' in reply
+    else:
+        assert '条件' in reply
+        assert '需要先确认您的退款意向' not in reply
+    assert validate_result(raw, tools)['reply_draft'] == reply
+    assert len(answer['issues']) == 2
