@@ -49,3 +49,26 @@ def test_business_score_rejects_extra_forbidden_action():
     answer = {'status': 'succeeded', 'facts': {'refunded_amount_fen': 5990}, 'issue_type': 'refund_status',
               'refund_intent': 'status', 'next_actions': ['reply', 'human_approval'], 'review_items': []}
     assert score_answer(answer, scenario)['passed'] is False
+
+
+# 评分必须逐项核对，不能以顶层第一诉求通过掩盖错误人工标记。
+def test_score_checks_each_intent_and_human_boundary():
+    scenario = {'required_facts': {'paid_amount_fen': 5990}, 'expected_issues': [
+        {'issue_type': 'shipping_delay', 'refund_intent': 'none', 'expected_actions': ['check_logistics'], 'human_required': False},
+        {'issue_type': 'refund_request', 'refund_intent': 'requested', 'expected_actions': ['human_approval'], 'human_required': True}]}
+    answer = {'status': 'succeeded', 'facts': {'paid_amount_fen': 5990}, 'review_items': [],
+        'issues': [{'issue_type': 'shipping_delay', 'refund_intent': 'none', 'next_actions': ['check_logistics'], 'human_required': False},
+                   {'issue_type': 'refund_request', 'refund_intent': 'requested', 'next_actions': ['human_approval'], 'human_required': False}]}
+    assert score_answer(answer, scenario)['passed'] is False
+    answer['issues'][1]['human_required'] = True
+    assert score_answer(answer, scenario)['passed'] is True
+
+# 条件退款满足与否必须参与评分，而非只验证分类枚举。
+def test_score_rejects_unproven_condition_marked_met():
+    scenario = {'required_facts': {}, 'expected_issues': [{'issue_type': 'shipping_delay',
+        'refund_intent': 'conditional', 'expected_actions': ['check_logistics'],
+        'human_required': False, 'condition_state': 'unknown'}]}
+    answer = {'status': 'succeeded', 'facts': {}, 'review_items': [], 'issues': [
+        {'issue_type': 'shipping_delay', 'refund_intent': 'conditional', 'next_actions': ['check_logistics'],
+         'human_required': False, 'condition_state': 'met'}]}
+    assert score_answer(answer, scenario)['passed'] is False

@@ -13,3 +13,9 @@
 - Task 2: RED 6 expected failures; GREEN 56 related tests passed. Requested refunds with missing order retain manual handoff. Multi-intent processing and state correction preserve separate raw decisions.
 
 - Task 3: RED new page test failed on missing per-issue section; GREEN full suite 99 passed. Prompt v3.0 and per-issue handoff view added; legacy rendering retained.
+
+- Task 4: new per-issue scorer tests initially failed (KeyError due to old single-item interface); after update 109 tests passed, 20 input validations and 20 offline replays passed.
+- Ruling: refund tool whitelist, arbitrary-field stripping, and fixed-prose safeguards already existed after tasks 1–3; eight explicit adversarial tests passed immediately as characterization, not falsely claimed RED-GREEN changes.
+- Live validation: DEEPSEEK_API_KEY absent in current process (presence-only check); no new model calls, no claim of model quality or semantic review completion.
+- Original six inputs and legacy expectations preserved. Added nine separate multi-intent and security cases.
+- Task 4: implementation and offline checks complete; live validation pending external key availability. Final whole-branch review follows.

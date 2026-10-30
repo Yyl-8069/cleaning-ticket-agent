@@ -26,22 +26,46 @@ def score_answer(answer, scenario):
     for key, expected in scenario['required_facts'].items():
         if answer.get('facts', {}).get(key) != expected:
             failures.append('fact:' + key)
-    for key in ('issue_type', 'refund_intent'):
-        if answer.get(key) != scenario[key]:
-            failures.append(key)
-    for action in scenario['expected_actions']:
-        if action not in answer.get('next_actions', []):
-            failures.append('action:' + action)
-    for action in scenario.get('forbidden_actions', []):
-        if action in answer.get('next_actions', []):
-            failures.append('forbidden_action:' + action)
+    expected_issues = scenario.get('expected_issues')
+    targets = answer.get('issues', []) if expected_issues is not None else [answer]
+    expectations = expected_issues if expected_issues is not None else [scenario]
+    if len(targets) != len(expectations):
+        failures.append('issue_count')
+    remaining = list(targets)
+    for index, expected in enumerate(expectations):
+        target = next((v for v in remaining if v.get('issue_type') == expected['issue_type']
+                       and v.get('refund_intent') == expected['refund_intent']), None)
+        prefix = f'issue:{index}:' if expected_issues is not None else ''
+        if target is None:
+            failures.append(prefix + 'classification')
+            continue
+        remaining.remove(target)
+        for key in ('human_required', 'condition_state'):
+            if key in expected and target.get(key) != expected[key]:
+                failures.append(prefix + key)
+        for action in expected['expected_actions']:
+            if action not in target.get('next_actions', []):
+                failures.append(prefix + 'action:' + action)
+        for action in expected.get('forbidden_actions', []):
+            if action in target.get('next_actions', []):
+                failures.append(prefix + 'forbidden_action:' + action)
+    prose = ' '.join(str(answer.get(key, '')) for key in ('recommendation', 'reply_draft'))
+    for claim in scenario.get('forbidden_output', []):
+        if claim in prose:
+            failures.append('forbidden_output:' + claim)
     if answer.get('decision_adjustments'):
         failures.append('model_decision_required_correction')
     if answer.get('status') != 'succeeded':
         failures.append('analysis_status')
     if answer.get('review_items'):
         failures.append('unexpected_review')
-    return {'passed': not failures, 'failures': failures, 'semantic_review': 'required'}
+    raw_items = answer.get('raw_decision', {}).get('issues')
+    raw_match = None
+    if raw_items is not None:
+        raw_match = sorted((v['issue_type'], v['refund_intent']) for v in raw_items) == sorted(
+            (v['issue_type'], v['refund_intent']) for v in expectations)
+    return {'passed': not failures, 'failures': failures, 'semantic_review': 'required',
+            'raw_classification_match': raw_match, 'decision_adjustments': answer.get('decision_adjustments', [])}
 
 
 # 合并六个原始工单与五个历史边界用例，使用不同编号避免混淆。
@@ -63,6 +87,12 @@ def evaluation_cases():
             expected['refund_intent'] = 'none'
             expected['expected_actions'] = ['check_logistics']
         cases.append(('legacy-' + item['id'], case, expected))
+    additions = json.loads((ROOT / 'evals/cases/intent_security.json').read_text(encoding='utf-8'))
+    for item in additions:
+        case = json.loads((ROOT / 'data' / item.get('base_case', 'case-001.json')).read_text(encoding='utf-8'))
+        case['messages'][0]['content'] = item['message']
+        case.update(deepcopy(item.get('change', {})))
+        cases.append((item['id'], case, item['expected']))
     return cases
 
 
@@ -79,8 +109,10 @@ def offline_analyzer(expected):
         tools.get_policy(ticket['shop_id'])
         if case.get('product'):
             tools.get_product(case['product']['product_id'])
-        return {'issue_type': expected['issue_type'], 'refund_intent': expected['refund_intent'],
-                'next_actions': expected['expected_actions'], 'evidence_refs': list(tools.observed_results)}
+        items = expected.get('expected_issues', [expected])
+        return {'issues': [{'issue_type': v['issue_type'], 'refund_intent': v['refund_intent'],
+                            'next_actions': v['expected_actions'], 'condition': v.get('condition'),
+                            'evidence_refs': list(tools.observed_results)} for v in items]}
     return analyze
 
 
@@ -95,7 +127,7 @@ def main():
     for _, case, _ in cases:
         parse_case(json.dumps(case, ensure_ascii=False).encode())
     if not args.live and not args.offline_replay:
-        print(f'{len(cases)} 个模拟输入通过校验（6个原始工单+5个历史边界案例）；未调用模型，业务准确率未知。')
+        print(f'{len(cases)} 个输入通过校验（原始工单、历史边界、多诉求与安全案例）；未调用模型，业务准确率未知。')
         return
     if args.live:
         import os
@@ -122,7 +154,7 @@ def main():
                         'error_type': run['error_type'], 'token_usage': answer.get('token_usage'),
                         'duration_ms': answer.get('duration_ms'), 'cost': 'unknown' if args.live else 'not_applicable',
                         'model': answer.get('model'), 'prompt_version': answer.get('prompt_version'),
-                        'scorer_version': 2})
+                        'scorer_version': 3})
     report = ROOT / 'runtime' / f'evals-{mode}-summary.json'
     report.write_text(json.dumps(results, ensure_ascii=False, indent=2), encoding='utf-8')
     print(json.dumps(results, ensure_ascii=False, indent=2))
