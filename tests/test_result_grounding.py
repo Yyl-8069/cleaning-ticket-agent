@@ -175,3 +175,62 @@ def test_malformed_tracking_events_keep_safe_analysis(tmp_path, events):
 def test_added_required_action_is_recorded_as_correction(tmp_path):
     answer = validate_result(decision('shipping_delay', ['check_logistics'], 'conditional'), prepare(tmp_path))
     assert 'next_actions:request_information_added' in answer['decision_adjustments']
+
+
+# 订单未发货时应纠正为催发，不得删除正确的备货核查动作。
+def test_unshipped_classification_preserves_fulfillment(tmp_path):
+    answer = validate_result(decision('shipping_delay', ['check_fulfillment'], 'none'), prepare(tmp_path, 2))
+    assert answer['issue_type'] == 'shipping_request'
+    assert 'check_fulfillment' in answer['next_actions']
+    assert 'check_logistics' not in answer['next_actions']
+    assert not any('物流记录' in text for text in answer['missing_information'])
+    assert answer['raw_decision']['issues'][0]['issue_type'] == 'shipping_delay'
+
+# 少件应允许客服核查出库，与客户补证并行。
+def test_missing_item_preserves_fulfillment_check(tmp_path):
+    answer = validate_result(decision('missing_item', ['request_information', 'check_fulfillment'], 'none'), prepare(tmp_path, 5))
+    assert 'check_fulfillment' in answer['next_actions']
+    assert not any('check_fulfillment_removed' in v for v in answer['decision_adjustments'])
+
+# 明确退款诉求缺订单也应交人工核实，不能静默丢掉申请。
+def test_requested_refund_without_order_still_marks_human(tmp_path):
+    answer = validate_result(decision('refund_request', ['human_approval'], 'requested'),
+                             prepare(tmp_path, 3, lambda c: c.update(order=None)))
+    assert answer['issues'][0]['human_required'] is True
+    assert answer['issues'][0]['human_reason']
+    assert 'human_approval' in answer['next_actions']
+    assert '获批' in answer['reply_draft']
+    assert '订单' in ' '.join(answer['missing_information'])
+
+# 单纯退款状态查询不要求补无关的规则与物流。
+def test_refund_status_has_no_irrelevant_missing_policy(tmp_path):
+    answer = validate_result(decision('refund_status', ['reply'], 'status'), prepare(tmp_path, 6))
+    assert not answer['issues'][0]['human_required']
+    assert not any('规则' in text or '物流' in text for text in answer['missing_information'])
+
+# 多诉求分别分析，人工退款不阻断配送查询。
+def test_multi_intent_keeps_independent_outcomes(tmp_path):
+    tools = prepare(tmp_path, 3)
+    raw = {'issues': [decision('shipping_delay', ['check_logistics'], 'none'),
+                      decision('refund_request', ['human_approval'], 'requested')]}
+    answer = validate_result(raw, tools)
+    assert answer['schema_version'] == 3
+    assert len(answer['issues']) == 2
+    assert answer['issues'][0]['human_required'] is False
+    assert answer['issues'][1]['human_required'] is True
+    assert 'check_logistics' in answer['next_actions']
+    assert 'human_approval' in answer['next_actions']
+    assert answer['status'] == 'succeeded'
+
+# 未到截止日的条件退款不能直接审核，也不能要求无关的退款意向确认。
+def test_future_condition_handles_current_shipping_first(tmp_path):
+    raw = decision('shipping_delay', ['check_logistics', 'human_approval'], 'conditional')
+    raw['condition'] = {'kind': 'not_delivered_by', 'deadline': '2026-10-27T23:59:59+08:00',
+                        'evidence_refs': ['get_ticket']}
+    answer = validate_result({'issues': [raw]}, prepare(tmp_path))
+    issue = answer['issues'][0]
+    assert issue['condition_state'] == 'unmet'
+    assert not issue['human_required']
+    assert 'human_approval' not in issue['next_actions']
+    assert 'request_information' not in issue['next_actions']
+    assert '确认目前是否希望申请退款' not in answer['reply_draft']

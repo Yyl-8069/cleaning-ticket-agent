@@ -21,7 +21,7 @@ def process_run(storage, run_id, analyzer, logger):
         result = validate_result(raw, tools)
         result['token_usage'] = raw.get('token_usage', {'input': 0, 'output': 0})
         result['model'] = raw.get('model', 'test')
-        result['prompt_version'] = '2.0'
+        result['prompt_version'] = '3.0'
         for item in result['review_items']:
             logger.event(storage, run_id, 'validation_review', item['field'])
         for correction in result['decision_adjustments']:

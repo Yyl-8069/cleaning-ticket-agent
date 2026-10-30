@@ -1,5 +1,6 @@
 """把模型的有限业务判断与已查询事实组合成可交给客服的安全结果。"""
 from datetime import datetime
+from context.intent_decisions import normalize_decisions, evaluate_condition
 
 ISSUES = {
     'shipping_delay': '物流停滞或配送进度查询',
@@ -34,7 +35,7 @@ def check_decision(raw, tools):
     if not isinstance(refs, list) or not refs or any(not isinstance(r, str) for r in refs):
         raise ValueError('事实缺少来源引用')
     known = {'get_ticket', 'get_order', 'get_product', 'get_shipments', 'get_history', 'get_policy'}
-    for ref in set(refs) | {'get_ticket', 'get_order'}:
+    for ref in set(refs + (raw.get('condition') or {}).get('evidence_refs', [])) | {'get_ticket', 'get_order'}:
         if ref not in known:
             raise ValueError('事实来源不属于当前案例')
         observation = tools.observed_results.get(ref)
@@ -86,7 +87,7 @@ def past_time(value, snapshot):
 
 
 # 用查询到的结构化字段生成事实、局部核验事项与具体处理步骤。
-def grounded_result(raw, tools):
+def grounded_issue(raw, tools):
     check_decision(raw, tools)
     issue = raw['issue_type']
     snapshot = datetime.fromisoformat(tools.case['metadata']['snapshot_at'])
@@ -101,6 +102,12 @@ def grounded_result(raw, tools):
     facts, verified, missing, review = {}, [], [], []
     adjustments = []
     refund_intent = raw['refund_intent']
+    if order and issue == 'shipping_delay' and order.get('status') == 'paid' and not order.get('shipped_at'):
+        issue = 'shipping_request'
+        adjustments.append('issue_type:shipping_delay_to_shipping_request')
+    elif order and issue == 'shipping_request' and order.get('status') in ('shipped', 'delivered'):
+        issue = 'shipping_delay'
+        adjustments.append('issue_type:shipping_request_to_shipping_delay')
     if issue == 'refund_status' and refund_intent != 'status':
         refund_intent = 'status'
         adjustments.append('refund_intent:normalized_to_status')
@@ -117,7 +124,12 @@ def grounded_result(raw, tools):
             fact(key, order[key], f"订单快照显示{label} {order[key] / 100:.2f} 元。", 'get_order')
     else:
         missing.append('当前快照缺少订单记录，需要核实订单资料。')
-    for ref, label in (('get_policy', '适用规则'), ('get_shipments', '物流记录'), ('get_history', '售后历史')):
+    needed = [('get_history', '售后历史')]
+    if issue != 'refund_status':
+        needed.append(('get_policy', '适用规则'))
+    if issue == 'shipping_delay':
+        needed.append(('get_shipments', '物流记录'))
+    for ref, label in needed:
         observation = tools.observed_results.get(ref)
         if not observation or observation['status'] != 'found':
             missing.append(f'当前查询未取得{label}，不能据此判断现实中不存在。')
@@ -154,22 +166,34 @@ def grounded_result(raw, tools):
         fact('refund_confirmed', True, '订单金额与成功退款流水一致；流水显示退款成功，但无法确认到账。', 'get_history')
     elif conflict or (order and order['refunded_amount_fen'] > 0 and history is None):
         review.append({'field': 'refund_evidence', 'reason': '订单退款金额与可验证的退款流水不一致或流水缺失，请核对退款记录。'})
-    can_request_refund = bool(refund_intent == 'requested' and issue != 'refund_status' and order
-                              and order['paid_amount_fen'] > order['refunded_amount_fen'] and not conflict)
-    # shortcut: 首版只覆盖七类售后诉求；新增业务类型需同时扩展枚举、话术及评估基线。
+    condition = evaluate_condition(raw.get('condition'), tools) if refund_intent == 'conditional' else evaluate_condition(None, tools)
+    if refund_intent == 'conditional' and raw.get('condition') is None:
+        condition = {'state': 'unknown', 'reason': '尚未取得可核实的退款条件与截止依据。'}
+    full_refund = bool(confirmed and order and order['paid_amount_fen'] == order['refunded_amount_fen'])
+    human_required = refund_intent == 'requested' or (refund_intent == 'conditional' and condition['state'] == 'met')
+    can_request_refund = human_required and not full_refund
+    human_reason = ''
+    if human_required:
+        human_reason = ('客户提出退款相关申请，需人工核实已有全额退款记录，不得重复退款。' if full_refund
+                        else '退款申请或已核实的退款条件须由人工审核；金额及处理结果由人工决定。')
     required = {
         'shipping_delay': ['check_logistics'], 'shipping_request': ['check_fulfillment'],
-        'refund_request': ['human_approval'] if can_request_refund else ['request_information'],
+        'refund_request': ['human_approval'] if can_request_refund else ['reply'] if full_refund else ['request_information'],
         'leak': ['request_information'], 'missing_item': ['request_information'],
         'refund_status': ['reply'], 'other': ['request_information'],
     }[issue]
-    if confirmed and order['paid_amount_fen'] == order['refunded_amount_fen'] and issue == 'refund_request':
-        required = ['reply']
-    if refund_intent == 'conditional' and 'request_information' not in required:
+    if refund_intent == 'conditional' and condition['state'] == 'unknown' and 'request_information' not in required:
         required.append('request_information')
+        missing.append(condition['reason'])
+    if can_request_refund and 'human_approval' not in required:
+        required.append('human_approval')
     allowed = set(required) | {'reply', 'check_policy'}
-    if can_request_refund:
-        allowed.add('human_approval')
+    if issue == 'refund_status':
+        allowed.discard('check_policy')
+    if issue == 'missing_item':
+        allowed.add('check_fulfillment')
+    if issue == 'refund_request' and order and not full_refund:
+        allowed.add('check_fulfillment' if order.get('status') == 'paid' else 'check_logistics')
     actions = []
     for action in dict.fromkeys(raw['next_actions']):
         if action in allowed:
@@ -223,8 +247,14 @@ def grounded_result(raw, tools):
         reply.append('请说明您希望查询或处理的具体问题。')
         recommendation.append('请客服澄清具体诉求后再处理。')
     if refund_intent == 'conditional':
-        recommendation.append('客户提出有条件退款，不应直接当成立即退款授权；必要时确认条件是否已满足。')
-        reply.append('关于您提出的条件退款，请确认目前是否希望申请退款。')
+        recommendation.append(condition['reason'])
+        if condition['state'] == 'met':
+            recommendation.append('退款条件已有记录支持，交人工核实审核，不代表退款已获批。')
+            reply.append('您提出的退款条件需由客服进一步核实审核，当前不代表退款获批。')
+        elif condition['state'] == 'unmet':
+            reply.append('目前记录不支持该条件退款申请，先处理当前问题；本次未执行退款。')
+        else:
+            reply.append('目前缺少核实退款条件的依据，请补充相关条件信息。')
     elif can_request_refund and issue != 'refund_request':
         recommendation.append('同时记录退款申请，证据与规则核实后交客服审核，不自动执行退款。')
         if 'human_approval' not in actions:
@@ -235,9 +265,35 @@ def grounded_result(raw, tools):
     if review:
         recommendation.extend(item['reason'] for item in review)
     return {'schema_version': 2, 'issue_type': issue, 'refund_intent': refund_intent, 'decision_adjustments': adjustments,
+            'human_required': human_required, 'human_reason': human_reason,
+            'condition_state': condition['state'], 'condition_reason': condition['reason'],
             'intent': ISSUES[issue], 'facts': facts, 'verified_facts': verified,
             'missing_information': missing, 'next_actions': actions,
             'action_labels': [ACTIONS[a] for a in actions], 'review_items': review,
             'recommendation': ' '.join(recommendation), 'reply_draft': ''.join(reply),
             'policy_version': (policy or {}).get('policy_id'), 'status': 'succeeded',
             'evidence_refs': list(dict.fromkeys(raw['evidence_refs']))}
+
+
+# 分别核实每项诉求，再汇总共享事实与客服结果，单项人工处理不阻断其余项。
+def grounded_result(raw, tools):
+    decisions = normalize_decisions(raw)
+    results = [grounded_issue(item, tools) for item in decisions]
+    answer = dict(results[0])
+    answer['schema_version'] = 3
+    answer['issues'] = results
+    answer['raw_decision'] = {'issues': decisions}
+    for key in ('next_actions', 'action_labels', 'missing_information', 'decision_adjustments', 'evidence_refs',
+                'review_items', 'verified_facts'):
+        values = []
+        for result in results:
+            for value in result[key]:
+                if value not in values:
+                    values.append(value)
+        answer[key] = values
+    answer['facts'] = {key: value for result in results for key, value in result['facts'].items()}
+    answer['intent'] = '；'.join(dict.fromkeys(result['intent'] for result in results))
+    answer['recommendation'] = ' '.join(dict.fromkeys(result['recommendation'] for result in results))
+    answer['reply_draft'] = ' '.join(dict.fromkeys(result['reply_draft'] for result in results))
+    answer['human_required'] = any(result['human_required'] for result in results)
+    return answer

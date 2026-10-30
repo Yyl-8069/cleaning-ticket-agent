@@ -9,3 +9,5 @@
 - Task 1: started.
 
 - Task 1: RED: new module missing; GREEN: 40 tests passed (intent decisions + existing grounding). Normalization strips arbitrary financial/free-text fields.
+
+- Task 2: RED 6 expected failures; GREEN 56 related tests passed. Requested refunds with missing order retain manual handoff. Multi-intent processing and state correction preserve separate raw decisions.
