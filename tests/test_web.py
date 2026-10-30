@@ -172,3 +172,31 @@ def test_auto_refresh_displays_result_when_run_finishes(tmp_path):
     assert '核查配送进度' in page.text
     assert '分析完成' in page.text
     assert 'http-equiv="refresh"' not in page.text
+
+
+# 分项显示人工原因，物流查询仍正常完成，且不声称已派单。
+def test_multi_intent_page_shows_manual_handoff(tmp_path):
+    # 预设语义判断，仍通过真实查询、校验与网页流程。
+    def analyze(case_id, run_id, tools):
+        ticket = tools.case['ticket']
+        tools.get_ticket(ticket['ticket_id'])
+        tools.get_order(ticket['order_id'])
+        tools.get_history(ticket['ticket_id'])
+        tools.get_policy(ticket['shop_id'])
+        tools.get_shipments(ticket['order_id'])
+        refs = list(tools.observed_results)
+        return {'issues': [
+            {'issue_type': 'shipping_delay', 'refund_intent': 'none',
+             'next_actions': ['check_logistics'], 'evidence_refs': refs},
+            {'issue_type': 'refund_request', 'refund_intent': 'requested',
+             'next_actions': ['human_approval'], 'evidence_refs': refs,
+             'human_reason': '<script>fake-approval</script>'}]}
+    client = TestClient(create_app(tmp_path / 'app.db', analyze))
+    response = client.post('/cases/upload', files={'file': ('case.json', SAMPLE.read_bytes(), 'application/json')})
+    assert '诉求 1' in response.text and '诉求 2' in response.text
+    assert '需人工处理' in response.text
+    assert '交接说明' in response.text
+    assert '尚未派单' in response.text
+    assert 'fake-approval' not in response.text
+    assert '核查物流' in response.text
+    assert '分析完成' in response.text

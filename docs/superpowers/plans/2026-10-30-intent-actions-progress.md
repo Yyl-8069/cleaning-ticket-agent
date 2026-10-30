@@ -11,3 +11,5 @@
 - Task 1: RED: new module missing; GREEN: 40 tests passed (intent decisions + existing grounding). Normalization strips arbitrary financial/free-text fields.
 
 - Task 2: RED 6 expected failures; GREEN 56 related tests passed. Requested refunds with missing order retain manual handoff. Multi-intent processing and state correction preserve separate raw decisions.
+
+- Task 3: RED new page test failed on missing per-issue section; GREEN full suite 99 passed. Prompt v3.0 and per-issue handoff view added; legacy rendering retained.

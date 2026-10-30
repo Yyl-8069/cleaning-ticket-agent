@@ -2,63 +2,125 @@
   "type": "object",
   "additionalProperties": false,
   "required": [
-    "issue_type",
-    "refund_intent",
-    "next_actions",
-    "evidence_refs"
+    "issues"
   ],
   "properties": {
-    "issue_type": {
-      "type": "string",
-      "enum": [
-        "shipping_delay",
-        "shipping_request",
-        "refund_request",
-        "leak",
-        "missing_item",
-        "refund_status",
-        "other"
-      ]
-    },
-    "refund_intent": {
-      "type": "string",
-      "enum": [
-        "none",
-        "conditional",
-        "requested",
-        "status"
-      ]
-    },
-    "next_actions": {
+    "issues": {
       "type": "array",
       "minItems": 1,
-      "uniqueItems": true,
+      "maxItems": 8,
       "items": {
-        "type": "string",
-        "enum": [
-          "reply",
-          "request_information",
-          "check_policy",
-          "human_approval",
-          "check_logistics",
-          "check_fulfillment"
-        ]
-      }
-    },
-    "evidence_refs": {
-      "type": "array",
-      "minItems": 1,
-      "uniqueItems": true,
-      "items": {
-        "type": "string",
-        "enum": [
-          "get_ticket",
-          "get_order",
-          "get_product",
-          "get_shipments",
-          "get_history",
-          "get_policy"
-        ]
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "issue_type",
+          "refund_intent",
+          "next_actions",
+          "evidence_refs",
+          "condition"
+        ],
+        "properties": {
+          "issue_type": {
+            "type": "string",
+            "enum": [
+              "shipping_delay",
+              "shipping_request",
+              "refund_request",
+              "leak",
+              "missing_item",
+              "refund_status",
+              "other"
+            ]
+          },
+          "refund_intent": {
+            "type": "string",
+            "enum": [
+              "none",
+              "conditional",
+              "requested",
+              "status"
+            ]
+          },
+          "next_actions": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "enum": [
+                "reply",
+                "request_information",
+                "check_policy",
+                "human_approval",
+                "check_logistics",
+                "check_fulfillment"
+              ]
+            }
+          },
+          "evidence_refs": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "enum": [
+                "get_ticket",
+                "get_order",
+                "get_product",
+                "get_shipments",
+                "get_history",
+                "get_policy"
+              ]
+            }
+          },
+          "condition": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "kind",
+                  "deadline",
+                  "evidence_refs"
+                ],
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "not_delivered_by",
+                      "unspecified"
+                    ]
+                  },
+                  "deadline": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "evidence_refs": {
+                    "type": "array",
+                    "minItems": 1,
+                    "uniqueItems": true,
+                    "items": {
+                      "type": "string",
+                      "enum": [
+                        "get_ticket",
+                        "get_order",
+                        "get_product",
+                        "get_shipments",
+                        "get_history",
+                        "get_policy"
+                      ]
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        }
       }
     }
   }

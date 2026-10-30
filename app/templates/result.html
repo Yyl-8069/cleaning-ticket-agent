@@ -10,7 +10,19 @@
 {% if result.review_items %}<section><h2>需核对的具体事项</h2><ul>{% for item in result.review_items %}<li>{{ item.reason }}</li>{% endfor %}</ul></section>{% endif %}
 {% if result.action_labels %}<section><h2>业务下一步</h2><ul>{% for label in result.action_labels %}<li>{{ label }}</li>{% endfor %}</ul><small>这些是建议步骤，尚未执行；不等于分析失败。</small></section>{% endif %}
 {% if result.review_required %}<section><h2>待客服复核</h2><p>{{ result.review_note }}</p></section>{% endif %}
-<section><h2>用户意图</h2><p>{{ result.intent }}</p></section>
+{% if result.issues %}
+<section><h2>诉求处理</h2>
+{% for issue in result.issues %}
+<h3>诉求 {{ loop.index }}：{{ issue.intent }}</h3>
+<p>{{ '需人工处理' if issue.human_required else '按建议继续处理' }}</p>
+{% if issue.human_required %}<p><strong>交接说明：</strong>{{ issue.human_reason }}</p>{% endif %}
+{% if issue.condition_state != 'not_applicable' %}<p>退款条件：{{ {'unmet': '未满足', 'met': '已有证据支持', 'unknown': '无法核实'}.get(issue.condition_state, '无法核实') }}。{{ issue.condition_reason }}</p>{% endif %}
+<p>{{ issue.recommendation }}</p>
+{% if issue.missing_information %}<ul>{% for info in issue.missing_information %}<li>{{ info }}</li>{% endfor %}</ul>{% endif %}
+{% endfor %}
+<small>人工事项仅为接手提示，尚未派单、审批或执行退款。</small>
+</section>
+{% else %}<section><h2>用户意图</h2><p>{{ result.intent }}</p></section>{% endif %}
 <section><h2>事实依据</h2><ul>{% for fact in display_facts %}<li>{{ fact.text }} <small>来源：{{ fact.source_label }}</small></li>{% endfor %}</ul><p><small>来源说明：本次上传的工单资料。</small></p></section>
 <section><h2>待确认信息</h2><ul>{% for item in result.missing_information %}<li>{{ item }}</li>{% endfor %}</ul></section>
 <section><h2>处理建议</h2><p>{{ result.recommendation }}</p><small>规则版本：{{ result.policy_version or '当前未取得适用规则' }}</small></section>
