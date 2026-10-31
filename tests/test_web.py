@@ -11,7 +11,7 @@ def fake_analysis(case_id, run_id, tools):
             'missing_information': ['是否现在申请退款'],
             'recommendation': '核查物流并询问退款意愿',
             'reply_draft': '您好，我们会先核查物流。请问您现在是否希望申请退款？',
-            'policy_version': 'DEMO-LOGISTICS-V1', 'status': 'needs_information',
+            'policy_version': 'APPLIANCE-AFTERSALES-V1', 'status': 'needs_information',
             'token_usage': {'input': 0, 'output': 0}}
 
 def test_upload_process_and_refresh(tmp_path):

@@ -22,9 +22,9 @@ def make_run(tmp_path):
 
 
 def result():
-    return {'intent': '物流查询和有条件退款', 'verified_facts': [{'text': '已发货', 'source': '模拟订单服务'}],
+    return {'intent': '物流查询和有条件退款', 'verified_facts': [{'text': '已发货', 'source': '订单记录样例'}],
             'missing_information': ['是否现在申请退款'], 'recommendation': '人工核查物流',
-            'reply_draft': '请问您现在是否希望申请退款？', 'policy_version': 'DEMO-LOGISTICS-V1',
+            'reply_draft': '请问您现在是否希望申请退款？', 'policy_version': 'APPLIANCE-AFTERSALES-V1',
             'status': 'needs_information'}
 
 
@@ -48,7 +48,7 @@ def test_rejects_unperformed_or_unverified_claims(tmp_path, claim):
 def test_rejects_unobserved_source(tmp_path):
     storage, case_id, _ = make_run(tmp_path)
     answer = result()
-    answer['verified_facts'][0]['source'] = '拼多多官方接口'
+    answer['verified_facts'][0]['source'] = '未经核实的外部服务'
     with pytest.raises(AnalysisError):
         validate_result(answer, CaseTools(storage, case_id))
 

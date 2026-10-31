@@ -2,22 +2,22 @@
   "metadata": {
     "case_id": "CASE-001",
     "synthetic": true,
-    "platform_context": "拼多多清洁类日用品店铺售后场景模拟；非官方接口或规则",
+    "platform_context": "家用电器售后服务数据样例；非真实接口、品牌或行业统一规则",
     "snapshot_at": "2026-10-27T10:00:00+08:00",
     "timezone": "Asia/Shanghai",
     "currency": "CNY",
     "money_unit": "fen",
-    "source": "人工构造的开发样例",
-    "usage": "仅作为初始业务数据；后续事件与验收答案见独立说明，不预装入Agent上下文"
+    "source": "人工构造的家电售后工单样例",
+    "usage": "用于本地流程演示与开发评估的合成数据，不代表真实订单、品牌规格或服务承诺"
   },
   "shop": {
     "shop_id": "SHOP-DEMO-001",
-    "name": "清禾清洁日用品店（虚构）"
+    "name": "星河家电售后服务中心（样例）"
   },
   "customer": {
     "customer_id": "CUSTOMER-DEMO-018",
     "shop_id": "SHOP-DEMO-001",
-    "display_name": "模拟客户018"
+    "display_name": "样例客户001"
   },
   "ticket": {
     "ticket_id": "TK-DEMO-0001",
@@ -36,7 +36,7 @@
       "ticket_id": "TK-DEMO-0001",
       "role": "customer",
       "created_at": "2026-10-27T10:00:00+08:00",
-      "content": "我22号买的厨房去油污清洁剂，到现在还没收到，物流好几天没动了。你们帮我查一下，今天还送不到我就不要了，给我退款。",
+      "content": "我22号买的电热水壶，到现在还没收到，物流好几天没更新。如果今天还送不到，我想申请退款。",
       "attachments": []
     }
   ],
@@ -45,7 +45,7 @@
     "shop_id": "SHOP-DEMO-001",
     "customer_id": "CUSTOMER-DEMO-018",
     "status": "shipped",
-    "paid_amount_fen": 5990,
+    "paid_amount_fen": 12990,
     "refunded_amount_fen": 0,
     "paid_at": "2026-10-22T20:15:00+08:00",
     "shipped_at": "2026-10-23T09:20:00+08:00",
@@ -53,7 +53,7 @@
     "after_sales_status": "none",
     "estimated_delivery_at": null,
     "version": 1,
-    "source": "模拟订单服务",
+    "source": "订单记录样例",
     "observed_at": "2026-10-27T10:00:00+08:00"
   },
   "order_items": [
@@ -64,14 +64,17 @@
       "sku_id": "SKU-DEMO-001",
       "quantity": 1,
       "unit": "套",
-      "paid_amount_fen": 5990,
+      "paid_amount_fen": 12990,
       "purchase_snapshot": {
         "captured_at": "2026-10-22T20:15:00+08:00",
-        "title": "厨房去油污清洁剂双瓶装",
-        "sku_description": "500mL/瓶 × 2瓶，喷头瓶装",
-        "category": "家居清洁 / 厨房清洁剂",
-        "packing_list": ["500mL厨房去油污清洁剂（含喷头） × 2瓶"],
-        "usage": "厨房油污清洁；具体适用表面及操作方法需查询经审核的商品标签说明",
+        "title": "1.7L电热水壶",
+        "sku_description": "额定容积1.7L，含主机与电源底座",
+        "category": "家用电器 / 厨房小家电",
+        "packing_list": [
+          "电热水壶主机 × 1",
+          "电源底座 × 1"
+        ],
+        "usage": "具体额定电压、安装、操作与维护方式以经核对的本型号说明书为准，不自行推断",
         "delivery_date_promise": null
       }
     }
@@ -80,19 +83,17 @@
     "product_id": "PRODUCT-DEMO-001",
     "shop_id": "SHOP-DEMO-001",
     "sku_id": "SKU-DEMO-001",
-    "title": "厨房去油污清洁剂双瓶装",
-    "sku_description": "500mL/瓶 × 2瓶，喷头瓶装",
-    "category": "家居清洁 / 厨房清洁剂",
-    "packing_list": ["500mL厨房去油污清洁剂（含喷头） × 2瓶"],
-    "net_content_ml_per_bottle": 500,
-    "bottles_per_set": 2,
-    "ingredients": null,
+    "title": "1.7L电热水壶",
+    "sku_description": "额定容积1.7L，含主机与电源底座",
+    "category": "家用电器 / 厨房小家电",
+    "packing_list": [
+      "电热水壶主机 × 1",
+      "电源底座 × 1"
+    ],
     "approved_label_document": null,
-    "applicable_surfaces": null,
-    "usage_instructions": null,
-    "shelf_life_months": null,
-    "product_information_note": "商品名称、容量及包装均为模拟；成分、适用表面、用法和保质期尚未提供，不可推断或生成确定性使用承诺。生产日期与批次需另查实际发货批次资料。",
-    "source": "模拟商品目录",
+    "usage_instructions": "具体额定电压、安装、操作与维护方式以经核对的本型号说明书为准，不自行推断",
+    "product_information_note": "商品名称和包装构成为合成样例；品牌、额定电压、材质、功能、质保期限、安装与维修政策尚无经核实资料，不得推断或承诺",
+    "source": "家电型号目录样例",
     "version": 1,
     "observed_at": "2026-10-27T10:00:00+08:00"
   },
@@ -101,54 +102,89 @@
       "shipment_id": "SHIPMENT-DEMO-001",
       "order_id": "ORDER-DEMO-20261022-001",
       "carrier": "演示快递（虚构）",
-      "tracking_number": "TRACK-DEMO-0001",
-      "declared_contents": [{"order_item_id": "ITEM-DEMO-001", "quantity": 1, "unit": "套"}],
+      "tracking_number": "TRACK-DEMO-001",
+      "declared_contents": [
+        {
+          "order_item_id": "ITEM-DEMO-001",
+          "unit": "件",
+          "quantity": 1
+        }
+      ],
       "contents_note": "发货系统登记内容，不证明实际装箱或实际收货内容",
       "status": "in_transit",
       "signed_at": null,
       "estimated_delivery_at": null,
-      "source": "模拟物流服务",
+      "source": "物流轨迹样例",
       "observed_at": "2026-10-27T10:00:00+08:00",
       "events": [
-        {"event_id": "TRACK-EVENT-001", "at": "2026-10-23T10:05:00+08:00", "description": "快递已揽收"},
-        {"event_id": "TRACK-EVENT-002", "at": "2026-10-24T02:10:00+08:00", "description": "到达目的地转运中心"}
+        {
+          "description": "包裹揽收",
+          "event_id": "TRACK-001-001",
+          "at": "2026-10-23T10:05:00+08:00"
+        },
+        {
+          "description": "到达转运中心",
+          "event_id": "TRACK-001-002",
+          "at": "2026-10-24T02:10:00+08:00"
+        }
       ]
     }
   ],
   "policy": {
-    "policy_id": "DEMO-LOGISTICS-V1",
+    "policy_id": "APPLIANCE-AFTERSALES-V1",
     "shop_id": "SHOP-DEMO-001",
     "version": 1,
-    "source": "本项目自定义演示店铺制度；非拼多多官方政策",
+    "source": "项目家电售后处理参考；非品牌官方规则",
     "effective_from": "2026-10-01T00:00:00+08:00",
     "effective_to": null,
-    "applicability": "本演示店铺已发货、未签收订单的物流停滞咨询",
+    "applicability": "家用电器售后处理样例",
     "rules": [
-      {"id": "R1", "text": "已发货、未签收，最后物流更新距当前时间严格超过72小时，可创建物流核查工单。"},
-      {"id": "R2", "text": "物流停滞不等于确认丢件；无可靠送达信息时不得承诺到货时间。"},
-      {"id": "R3", "text": "客户表达有条件的退款意向时，先确认是否现在申请退款。"},
-      {"id": "R4", "text": "客户明确申请退款后，可提交人工退款审批；提交审批不代表批准或退款成功。Agent不能直接执行退款。"},
-      {"id": "R5", "text": "同一订单存在进行中的物流核查工单时应复用；存在进行中的同类退款申请时不得重复提交。"},
-      {"id": "R6", "text": "退款审批请求针对本样例的整单未收货诉求；请求金额取订单实付减已退款金额，不由模型猜测。提交前重新查询状态，状态不符合时转人工。"},
-      {"id": "R7", "text": "创建核查或提交审批后，演示内部跟进时间为24小时后；这是内部检查时间，不是对客户承诺的处理完成时间。"},
-      {"id": "R8", "text": "只有核实处理结果且没有未处理的关联事项时才可结单。"}
+      {
+        "text": "物流轨迹停滞时可建议客服核查；没有可靠轨迹不能确认丢件或承诺送达日期。",
+        "id": "A1"
+      },
+      {
+        "text": "退款申请和退款金额决定必须交人工审核；Agent不得批准、承诺或执行退款。",
+        "id": "A2"
+      },
+      {
+        "text": "涉及产品外观损坏、渗水、异味、冒烟或异常发热时，建议停止使用并不要通电或自行拆机。",
+        "id": "A3"
+      },
+      {
+        "text": "品牌质保、退换、安装和维修政策以经核实的具体型号官方资料为准；样例规则不构成承诺。",
+        "id": "A4"
+      }
     ]
   },
   "authorization": {
     "shop_id": "SHOP-DEMO-001",
     "principal": "demo_agent",
-    "allowed_actions": ["read_scoped_order", "read_scoped_shipment", "read_policy", "read_ticket_history", "create_logistics_ticket", "submit_refund_approval", "create_followup", "draft_reply"],
-    "forbidden_actions": ["approve_refund", "execute_refund", "access_other_shop_data"],
+    "allowed_actions": [
+      "read_scoped_order",
+      "read_scoped_shipment",
+      "read_policy",
+      "read_ticket_history",
+      "draft_reply"
+    ],
+    "forbidden_actions": [
+      "create_logistics_ticket",
+      "submit_refund_approval",
+      "approve_refund",
+      "execute_refund",
+      "send_reply",
+      "access_other_shop_data"
+    ],
     "reply_delivery": "客服确认后发送，生成草稿不代表已发送"
   },
   "history": {
-    "source": "模拟售后服务",
-    "observed_at": "2026-10-27T10:00:00+08:00",
-    "previous_tickets": [],
-    "logistics_tickets": [],
-    "refund_approvals": [],
     "refund_transactions": [],
+    "refund_approvals": [],
+    "source": "售后历史样例",
+    "logistics_tickets": [],
+    "previous_tickets": [],
     "action_records": [],
-    "followups": []
+    "followups": [],
+    "observed_at": "2026-10-27T10:00:00+08:00"
   }
 }

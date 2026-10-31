@@ -18,6 +18,7 @@ def _need(obj, path):
     return value
 
 
+# 校验上传大小、JSON结构及案例内的业务编号与金额关联。
 def parse_case(raw: bytes) -> dict:
     if len(raw) > MAX_BYTES:
         raise CaseValidationError('文件超过 1 MiB 上限')
@@ -32,7 +33,7 @@ def parse_case(raw: bytes) -> dict:
                  'customer.customer_id', 'customer.shop_id', 'shop.shop_id'):
         _need(data, path)
     if data['metadata'].get('synthetic') is not True:
-        raise CaseValidationError('metadata.synthetic: 只接受明确标记的模拟案例')
+        raise CaseValidationError('metadata.synthetic: 只接受明确标记的数据样例')
     try:
         snapshot = datetime.fromisoformat(data['metadata']['snapshot_at'])
         if snapshot.tzinfo is None:

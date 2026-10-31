@@ -17,8 +17,9 @@ ROOT = Path(__file__).resolve().parents[1]
 templates = Jinja2Templates(directory=str(ROOT / 'app' / 'templates'))
 
 
+# 创建上传、分析结果及健康检查接口，并绑定持久化与分析器。
 def create_app(db_path=None, analyzer=None):
-    app = FastAPI(title='清洁日用品工单 Agent 1.0')
+    app = FastAPI(title='家用电器售后工单 Agent 1.0')
     storage = Storage(db_path or ROOT / 'runtime' / 'app.db')
     logger = RunLogger((Path(db_path).parent if db_path else ROOT / 'runtime') / 'agent.jsonl')
     analyzer = analyzer or analyze_ticket

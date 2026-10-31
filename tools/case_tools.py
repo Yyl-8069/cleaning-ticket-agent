@@ -27,32 +27,38 @@ class CaseTools:
         return {'status': status, 'data': data if status == 'found' else None,
                 'source': source, 'observed_at': self.case['metadata']['snapshot_at']}
 
+    # 按工单号读取当前案例的工单和客户消息。
     def get_ticket(self, ticket_id):
         return self._read('get_ticket', ticket_id, self.case['ticket']['ticket_id'],
-                          {'ticket': self.case['ticket'], 'messages': self.case['messages']}, '模拟工单快照')
+                          {'ticket': self.case['ticket'], 'messages': self.case['messages']}, '上传的工单资料')
 
+    # 按订单号返回订单记录及购买商品明细。
     def get_order(self, order_id):
         order = self.case.get('order')
         data = {'order': order, 'order_items': self.case.get('order_items', [])} if order else None
         return self._read('get_order', order_id, self.case['ticket']['order_id'], data,
-                          (order or {}).get('source', '模拟订单服务'))
+                          (order or {}).get('source', '订单记录样例'))
 
+    # 按商品编号查询当前案例中的家电目录信息。
     def get_product(self, product_id):
         product = self.case.get('product')
         return self._read('get_product', product_id, (product or {}).get('product_id'), product,
-                          (product or {}).get('source', '模拟商品目录'))
+                          (product or {}).get('source', '家电型号目录样例'))
 
+    # 按订单号读取物流记录及已有轨迹。
     def get_shipments(self, order_id):
         shipments = self.case.get('shipments', [])
         return self._read('get_shipments', order_id, self.case['ticket']['order_id'], shipments,
-                          shipments[0].get('source', '模拟物流服务') if shipments else '模拟物流服务')
+                          shipments[0].get('source', '物流轨迹样例') if shipments else '物流轨迹样例')
 
+    # 按工单号查询关联售后及退款历史。
     def get_history(self, ticket_id):
         history = self.case.get('history')
         return self._read('get_history', ticket_id, self.case['ticket']['ticket_id'], history,
-                          (history or {}).get('source', '模拟售后服务'))
+                          (history or {}).get('source', '售后历史样例'))
 
+    # 查询在当前案例快照时间有效的店铺处理参考。
     def get_policy(self, shop_id):
         policy = applicable_policy(self.case)
         return self._read('get_policy', shop_id, self.case['ticket']['shop_id'], policy,
-                          (policy or {}).get('source', '模拟店铺规则'))
+                          (policy or {}).get('source', '项目家电售后处理参考'))

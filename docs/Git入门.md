@@ -32,7 +32,7 @@ python -m evals.run_evals
 
 ```powershell
 git add .
-git commit -m "实现清洁日用品工单 Agent 1.0 本机流程"
+git commit -m "实现家用电器售后工单 Agent 1.0 本机流程"
 git log --oneline -3
 git status
 ```

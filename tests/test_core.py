@@ -52,7 +52,7 @@ def test_tools_report_source(tmp_path):
     case_id = db.save_case(parse_case(SAMPLE.read_bytes()))
     result = CaseTools(db, case_id).get_shipments('ORDER-DEMO-20261022-001')
     assert result['status'] == 'found'
-    assert result['source'] == '模拟物流服务'
+    assert result['source'] == '物流轨迹样例'
 
 
 def test_rejects_mismatched_product_shop():

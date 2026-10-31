@@ -1,0 +1,134 @@
+{
+  "metadata": {
+    "case_id": "CASE-002",
+    "synthetic": true,
+    "platform_context": "家用电器售后服务数据样例；非真实接口、品牌或行业统一规则",
+    "snapshot_at": "2026-10-28T10:00:00+08:00",
+    "timezone": "Asia/Shanghai",
+    "currency": "CNY",
+    "money_unit": "fen",
+    "source": "人工构造的家电售后工单样例",
+    "usage": "用于本地流程演示与开发评估的合成数据，不代表真实订单、品牌规格或服务承诺"
+  },
+  "shop": {
+    "shop_id": "SHOP-DEMO-001",
+    "name": "星河家电售后服务中心（样例）"
+  },
+  "customer": {
+    "customer_id": "CUSTOMER-DEMO-002",
+    "shop_id": "SHOP-DEMO-001",
+    "display_name": "样例客户002"
+  },
+  "ticket": {
+    "ticket_id": "TK-DEMO-002",
+    "shop_id": "SHOP-DEMO-001",
+    "customer_id": "CUSTOMER-DEMO-002",
+    "order_id": "ORDER-DEMO-20261028-002",
+    "status": "pending",
+    "assigned_to": null,
+    "created_at": "2026-10-28T10:00:00+08:00",
+    "closed_at": null,
+    "closure_reason": null
+  },
+  "messages": [
+    {
+      "message_id": "MSG-DEMO-002",
+      "ticket_id": "TK-DEMO-002",
+      "role": "customer",
+      "created_at": "2026-10-28T10:00:00+08:00",
+      "content": "洗衣机昨天付款了，订单还是未发货，麻烦帮我查下什么时候发。",
+      "attachments": []
+    }
+  ],
+  "order": {
+    "order_id": "ORDER-DEMO-20261028-002",
+    "shop_id": "SHOP-DEMO-001",
+    "customer_id": "CUSTOMER-DEMO-002",
+    "status": "paid",
+    "paid_amount_fen": 159900,
+    "refunded_amount_fen": 0,
+    "paid_at": "2026-10-28T08:00:00+08:00",
+    "shipped_at": null,
+    "receipt_confirmed_at": null,
+    "after_sales_status": "none",
+    "estimated_delivery_at": null,
+    "version": 1,
+    "source": "订单记录样例",
+    "observed_at": "2026-10-28T10:00:00+08:00"
+  },
+  "order_items": [
+    {
+      "order_item_id": "ITEM-DEMO-002",
+      "order_id": "ORDER-DEMO-20261028-002",
+      "product_id": "PRODUCT-DEMO-002",
+      "sku_id": "SKU-DEMO-002",
+      "quantity": 1,
+      "unit": "套",
+      "paid_amount_fen": 159900,
+      "purchase_snapshot": {
+        "captured_at": "2026-10-28T08:00:00+08:00",
+        "title": "滚筒洗衣机",
+        "sku_description": "滚筒式洗衣机，含进水管与排水管",
+        "category": "家用电器 / 大家电",
+        "packing_list": [
+          "洗衣机主机 × 1",
+          "进水管 × 1",
+          "排水管 × 1"
+        ],
+        "usage": "具体额定电压、安装、操作与维护方式以经核对的本型号说明书为准，不自行推断",
+        "delivery_date_promise": null
+      }
+    }
+  ],
+  "product": {
+    "product_id": "PRODUCT-DEMO-002",
+    "shop_id": "SHOP-DEMO-001",
+    "sku_id": "SKU-DEMO-002",
+    "title": "滚筒洗衣机",
+    "sku_description": "滚筒式洗衣机，含进水管与排水管",
+    "category": "家用电器 / 大家电",
+    "packing_list": [
+      "洗衣机主机 × 1",
+      "进水管 × 1",
+      "排水管 × 1"
+    ],
+    "approved_label_document": null,
+    "usage_instructions": "具体额定电压、安装、操作与维护方式以经核对的本型号说明书为准，不自行推断",
+    "product_information_note": "商品名称和包装构成为合成样例；品牌、额定电压、材质、功能、质保期限、安装与维修政策尚无经核实资料，不得推断或承诺",
+    "source": "家电型号目录样例",
+    "version": 1,
+    "observed_at": "2026-10-28T10:00:00+08:00"
+  },
+  "shipments": [],
+  "policy": null,
+  "authorization": {
+    "shop_id": "SHOP-DEMO-001",
+    "principal": "demo_agent",
+    "allowed_actions": [
+      "read_scoped_order",
+      "read_scoped_shipment",
+      "read_policy",
+      "read_ticket_history",
+      "draft_reply"
+    ],
+    "forbidden_actions": [
+      "create_logistics_ticket",
+      "submit_refund_approval",
+      "approve_refund",
+      "execute_refund",
+      "send_reply",
+      "access_other_shop_data"
+    ],
+    "reply_delivery": "客服确认后发送，生成草稿不代表已发送"
+  },
+  "history": {
+    "refund_transactions": [],
+    "refund_approvals": [],
+    "source": "售后历史样例",
+    "logistics_tickets": [],
+    "previous_tickets": [],
+    "action_records": [],
+    "followups": [],
+    "observed_at": "2026-10-28T10:00:00+08:00"
+  }
+}

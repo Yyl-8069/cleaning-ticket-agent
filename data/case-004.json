@@ -1,0 +1,166 @@
+{
+  "metadata": {
+    "case_id": "CASE-004",
+    "synthetic": true,
+    "platform_context": "家用电器售后服务数据样例；非真实接口、品牌或行业统一规则",
+    "snapshot_at": "2026-10-28T10:00:00+08:00",
+    "timezone": "Asia/Shanghai",
+    "currency": "CNY",
+    "money_unit": "fen",
+    "source": "人工构造的家电售后工单样例",
+    "usage": "用于本地流程演示与开发评估的合成数据，不代表真实订单、品牌规格或服务承诺"
+  },
+  "shop": {
+    "shop_id": "SHOP-DEMO-001",
+    "name": "星河家电售后服务中心（样例）"
+  },
+  "customer": {
+    "customer_id": "CUSTOMER-DEMO-004",
+    "shop_id": "SHOP-DEMO-001",
+    "display_name": "样例客户004"
+  },
+  "ticket": {
+    "ticket_id": "TK-DEMO-004",
+    "shop_id": "SHOP-DEMO-001",
+    "customer_id": "CUSTOMER-DEMO-004",
+    "order_id": "ORDER-DEMO-20261028-004",
+    "status": "pending",
+    "assigned_to": null,
+    "created_at": "2026-10-28T10:00:00+08:00",
+    "closed_at": null,
+    "closure_reason": null
+  },
+  "messages": [
+    {
+      "message_id": "MSG-DEMO-004",
+      "ticket_id": "TK-DEMO-004",
+      "role": "customer",
+      "created_at": "2026-10-28T10:00:00+08:00",
+      "content": "电饭煲使用时机身接缝处有水渗出，我已经停止使用了，接下来怎么处理？",
+      "attachments": []
+    }
+  ],
+  "order": {
+    "order_id": "ORDER-DEMO-20261028-004",
+    "shop_id": "SHOP-DEMO-001",
+    "customer_id": "CUSTOMER-DEMO-004",
+    "status": "delivered",
+    "paid_amount_fen": 8990,
+    "refunded_amount_fen": 0,
+    "paid_at": "2026-10-28T08:00:00+08:00",
+    "shipped_at": "2026-10-28T09:00:00+08:00",
+    "receipt_confirmed_at": "2026-10-28T09:30:00+08:00",
+    "after_sales_status": "none",
+    "estimated_delivery_at": null,
+    "version": 1,
+    "source": "订单记录样例",
+    "observed_at": "2026-10-28T10:00:00+08:00"
+  },
+  "order_items": [
+    {
+      "order_item_id": "ITEM-DEMO-004",
+      "order_id": "ORDER-DEMO-20261028-004",
+      "product_id": "PRODUCT-DEMO-004",
+      "sku_id": "SKU-DEMO-004",
+      "quantity": 1,
+      "unit": "套",
+      "paid_amount_fen": 8990,
+      "purchase_snapshot": {
+        "captured_at": "2026-10-28T08:00:00+08:00",
+        "title": "电饭煲",
+        "sku_description": "家用电饭煲，含内胆与电源线",
+        "category": "家用电器 / 厨房小家电",
+        "packing_list": [
+          "电饭煲主机 × 1",
+          "内胆 × 1",
+          "电源线 × 1"
+        ],
+        "usage": "具体额定电压、安装、操作与维护方式以经核对的本型号说明书为准，不自行推断",
+        "delivery_date_promise": null
+      }
+    }
+  ],
+  "product": {
+    "product_id": "PRODUCT-DEMO-004",
+    "shop_id": "SHOP-DEMO-001",
+    "sku_id": "SKU-DEMO-004",
+    "title": "电饭煲",
+    "sku_description": "家用电饭煲，含内胆与电源线",
+    "category": "家用电器 / 厨房小家电",
+    "packing_list": [
+      "电饭煲主机 × 1",
+      "内胆 × 1",
+      "电源线 × 1"
+    ],
+    "approved_label_document": null,
+    "usage_instructions": "具体额定电压、安装、操作与维护方式以经核对的本型号说明书为准，不自行推断",
+    "product_information_note": "商品名称和包装构成为合成样例；品牌、额定电压、材质、功能、质保期限、安装与维修政策尚无经核实资料，不得推断或承诺",
+    "source": "家电型号目录样例",
+    "version": 1,
+    "observed_at": "2026-10-28T10:00:00+08:00"
+  },
+  "shipments": [
+    {
+      "shipment_id": "SHIPMENT-DEMO-004",
+      "order_id": "ORDER-DEMO-20261028-004",
+      "carrier": "演示快递（虚构）",
+      "tracking_number": "TRACK-DEMO-004",
+      "declared_contents": [
+        {
+          "order_item_id": "ITEM-DEMO-004",
+          "unit": "件",
+          "quantity": 1
+        }
+      ],
+      "contents_note": "发货系统登记内容，不证明实际装箱或实际收货内容",
+      "status": "delivered",
+      "signed_at": "2026-10-28T09:30:00+08:00",
+      "estimated_delivery_at": null,
+      "source": "物流轨迹样例",
+      "observed_at": "2026-10-28T10:00:00+08:00",
+      "events": [
+        {
+          "description": "包裹揽收",
+          "event_id": "TRACK-004-001",
+          "at": "2026-10-28T09:00:00+08:00"
+        },
+        {
+          "description": "包裹签收",
+          "event_id": "TRACK-004-002",
+          "at": "2026-10-28T09:30:00+08:00"
+        }
+      ]
+    }
+  ],
+  "policy": null,
+  "authorization": {
+    "shop_id": "SHOP-DEMO-001",
+    "principal": "demo_agent",
+    "allowed_actions": [
+      "read_scoped_order",
+      "read_scoped_shipment",
+      "read_policy",
+      "read_ticket_history",
+      "draft_reply"
+    ],
+    "forbidden_actions": [
+      "create_logistics_ticket",
+      "submit_refund_approval",
+      "approve_refund",
+      "execute_refund",
+      "send_reply",
+      "access_other_shop_data"
+    ],
+    "reply_delivery": "客服确认后发送，生成草稿不代表已发送"
+  },
+  "history": {
+    "refund_transactions": [],
+    "refund_approvals": [],
+    "source": "售后历史样例",
+    "logistics_tickets": [],
+    "previous_tickets": [],
+    "action_records": [],
+    "followups": [],
+    "observed_at": "2026-10-28T10:00:00+08:00"
+  }
+}

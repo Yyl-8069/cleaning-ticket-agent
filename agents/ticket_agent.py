@@ -18,6 +18,7 @@ class AnalysisError(RuntimeError):
     pass
 
 
+# 校验输出结构、来源及规则版本，拦截受限业务动作表述。
 def validate_result(result, tools):
     if not isinstance(result, dict):
         raise AnalysisError('模型输出不是 JSON 对象')
@@ -29,7 +30,7 @@ def validate_result(result, tools):
         raise AnalysisError('模型输出状态无效')
     if not isinstance(result['verified_facts'], list) or not isinstance(result['missing_information'], list):
         raise AnalysisError('事实和待确认信息必须为列表')
-    allowed_sources = {'模拟工单快照'}
+    allowed_sources = {'上传的工单资料'}
     for item in ('order', 'product', 'history', 'policy'):
         record = tools.case.get(item)
         if isinstance(record, dict) and record.get('source'):

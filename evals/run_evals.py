@@ -32,7 +32,7 @@ def main():
             case = deepcopy(base)
             case.update(scenario['change'])
             parse_case(json.dumps(case, ensure_ascii=False).encode())
-        print(f'{len(scenarios)} 个模拟评估输入通过校验；未调用模型，业务准确率未知。')
+        print(f'{len(scenarios)} 个评估输入通过校验；未调用模型，业务准确率未知。')
         return
     storage = Storage(ROOT / 'runtime' / 'evals.db')
     logger = RunLogger(ROOT / 'runtime' / 'evals.jsonl')
