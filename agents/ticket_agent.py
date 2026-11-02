@@ -2,7 +2,8 @@
 import json
 import os
 from pathlib import Path
-from time import monotonic
+from time import monotonic, sleep
+from openai import APIConnectionError, APIStatusError
 
 from langchain_core.messages import HumanMessage, SystemMessage, ToolMessage
 from langchain_core.tools import tool
@@ -12,6 +13,7 @@ from context.result_grounding import grounded_result
 PROMPTS = Path(__file__).resolve().parents[1] / 'prompts'
 MAX_TOOL_CALLS = 12
 MAX_SECONDS = 90
+RETRY_DELAY_SECONDS = 0.5
 
 
 class AnalysisError(RuntimeError):
@@ -22,6 +24,7 @@ class AnalysisError(RuntimeError):
         '未设置 DEEPSEEK_API_KEY', 'Agent 运行超时', '模型输出不是文本',
         '模型输出不是合法 JSON', '工具调用次数超限', '请求了未知工具',
         'Agent 未在规定轮次内结束',
+        '诉求依据不属于客户消息',
     })
 
     # 只向页面和日志暴露白名单中的失败原因。
@@ -44,6 +47,12 @@ def validate_result(result, tools):
         raise AnalysisError(str(exc)) from exc
     # 用量字段由调用层记录，不由模型输出决定。
     return answer
+
+
+# 仅连接/超时、限流和临时服务端错误允许受限恢复。
+def is_transient_model_error(exc):
+    return isinstance(exc, APIConnectionError) or (
+        isinstance(exc, APIStatusError) and (exc.status_code == 429 or 500 <= exc.status_code < 600))
 
 
 # 让单个 LangChain Agent 查询当前案例并生成结构化分析结果。
@@ -82,36 +91,60 @@ def analyze_ticket(case_id, run_id, tools):
     started = monotonic()
     usage = {'input': 0, 'output': 0}
     calls = 0
+    format_retries = 0
+    service_retries = 0
     lookup = {item.name: item for item in wrapped}
     for _ in range(MAX_TOOL_CALLS + 2):
         if monotonic() - started > MAX_SECONDS:
             raise AnalysisError('Agent 运行超时')
-        call_started = monotonic()
-        try:
-            response = model.invoke(messages)
-        except Exception:
-            tools.on_model_call('failed', {'duration_ms': round((monotonic() - call_started) * 1000),
-                                           'model': model_name})
-            raise
+        for attempt in range(2):
+            remaining = MAX_SECONDS - (monotonic() - started)
+            if remaining <= 0:
+                raise AnalysisError('Agent 运行超时')
+            call_started = monotonic()
+            try:
+                response = model.invoke(messages, timeout=min(30, remaining))
+                break
+            except Exception as exc:
+                tools.on_model_call('failed', {'duration_ms': round((monotonic() - call_started) * 1000),
+                                               'model': model_name})
+                if not is_transient_model_error(exc) or service_retries:
+                    raise
+                if MAX_SECONDS - (monotonic() - started) <= RETRY_DELAY_SECONDS:
+                    raise AnalysisError('Agent 运行超时') from exc
+                service_retries += 1
+                tools.on_model_call('retrying', {'model': model_name})
+                sleep(RETRY_DELAY_SECONDS)
         token = response.usage_metadata or {}
         tools.on_model_call('succeeded', {'duration_ms': round((monotonic() - call_started) * 1000),
                                           'input_tokens': token.get('input_tokens', 0),
-                                          'output_tokens': token.get('output_tokens', 0), 'model': model_name})
+                                          'output_tokens': token.get('output_tokens', 0), 'model': model_name,
+                                          'usage_complete': 'input_tokens' in token and 'output_tokens' in token})
         if monotonic() - started > MAX_SECONDS:
             raise AnalysisError('Agent 运行超时')
         usage['input'] += token.get('input_tokens', 0)
         usage['output'] += token.get('output_tokens', 0)
         messages.append(response)
+        if format_retries and response.tool_calls:
+            raise AnalysisError('模型输出业务判断无效')
         if not response.tool_calls:
             content = response.content
             if not isinstance(content, str):
                 raise AnalysisError('模型输出不是文本')
             try:
                 result = json.loads(content.strip().removeprefix('```json').removesuffix('```').strip())
-            except json.JSONDecodeError as exc:
-                raise AnalysisError('模型输出不是合法 JSON') from exc
-            if not isinstance(result, dict):
-                raise AnalysisError('模型输出不是 JSON 对象')
+                if not isinstance(result, dict):
+                    raise AnalysisError('模型输出不是 JSON 对象')
+                # 校验最终结构；格式修复不能放宽字段、来源或权限校验。
+                from context.intent_decisions import normalize_decisions
+                normalize_decisions(result)
+            except (json.JSONDecodeError, ValueError, AnalysisError) as exc:
+                if format_retries:
+                    reason = '模型输出不是合法 JSON' if isinstance(exc, json.JSONDecodeError) else str(exc)
+                    raise AnalysisError(reason) from exc
+                format_retries += 1
+                messages.append(SystemMessage(content='最终输出结构校验失败。请依据已查询资料，严格按 output schema 返回一个包含 issues 的 JSON 对象。只修复格式，保留客户原意及权限边界，不添加新的事实。'))
+                continue
             result['token_usage'] = usage
             result['model'] = model_name
             return result

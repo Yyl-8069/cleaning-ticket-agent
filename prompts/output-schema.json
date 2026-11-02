@@ -17,7 +17,8 @@
           "refund_intent",
           "next_actions",
           "evidence_refs",
-          "condition"
+          "condition",
+          "customer_evidence"
         ],
         "properties": {
           "issue_type": {
@@ -27,6 +28,8 @@
               "shipping_request",
               "refund_request",
               "leak",
+              "product_damage",
+              "missing_accessory",
               "missing_item",
               "refund_status",
               "other"
@@ -119,6 +122,11 @@
                 }
               }
             ]
+          },
+          "customer_evidence": {
+            "type": "string",
+            "minLength": 1,
+            "description": "逐字引用客户消息中支持本项诉求的短句，不得引用工具或规则正文"
           }
         }
       }

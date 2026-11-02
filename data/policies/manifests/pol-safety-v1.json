@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "document_id": "POL-SAFETY",
+  "version": 1,
+  "title": "电器异常与安全补证指引",
+  "shop_id": "SHOP-DEMO-001",
+  "topics": [
+    "故障",
+    "安全",
+    "破损",
+    "渗水"
+  ],
+  "scope_type": "shop",
+  "scope_value": "SHOP-DEMO-001",
+  "source_kind": "project_reference",
+  "source_name": "项目自编家电售后处理参考",
+  "source_ref": "项目资料包2026-10-31",
+  "file_ref": "documents/pol-safety-v1.pdf",
+  "sha256": "1df5c5e880e9ca175c9245da15ae0078e9297726f6062e58d162e65d3bbe261a",
+  "effective_from": "2026-10-01T00:00:00+08:00",
+  "effective_to": null,
+  "time_basis": "case_snapshot_at",
+  "authored_at": "2026-10-31",
+  "retrospective_reference": true,
+  "status": "draft",
+  "page_count": 2
+}

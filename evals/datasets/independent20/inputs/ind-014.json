@@ -1,0 +1,122 @@
+{
+  "metadata": {
+    "case_id": "IND-014",
+    "synthetic": true,
+    "snapshot_at": "2026-10-18T12:00:00+08:00",
+    "timezone": "Asia/Shanghai",
+    "currency": "CNY",
+    "money_unit": "fen",
+    "source": "独立人工构造家电售后评估集v1",
+    "usage": "独立评估用合成工单；非真实店铺、品牌或官方政策；预期答案不包含在输入中",
+    "style": "明确未来期限"
+  },
+  "shop": {
+    "shop_id": "SHOP-INDEPENDENT-02",
+    "name": "家电服务样例站2"
+  },
+  "customer": {
+    "customer_id": "CUSTOMER-IND-014",
+    "shop_id": "SHOP-INDEPENDENT-02",
+    "display_name": "独立样例客户14"
+  },
+  "ticket": {
+    "ticket_id": "TICKET-IND-014",
+    "shop_id": "SHOP-INDEPENDENT-02",
+    "customer_id": "CUSTOMER-IND-014",
+    "order_id": "ORDER-IND-014",
+    "status": "pending",
+    "created_at": "2026-10-18T11:30:00+08:00"
+  },
+  "messages": [
+    {
+      "message_id": "MSG-IND-014",
+      "ticket_id": "TICKET-IND-014",
+      "role": "customer",
+      "created_at": "2026-10-18T11:30:00+08:00",
+      "content": "请查一下料理机物流，2026-10-18T18:00:00+08:00还没送到就退款。现在先记下这个条件。",
+      "attachments": []
+    }
+  ],
+  "order": {
+    "order_id": "ORDER-IND-014",
+    "shop_id": "SHOP-INDEPENDENT-02",
+    "customer_id": "CUSTOMER-IND-014",
+    "status": "shipped",
+    "paid_amount_fen": 42900,
+    "refunded_amount_fen": 0,
+    "paid_at": "2026-10-15T09:20:00+08:00",
+    "shipped_at": "2026-10-16T14:00:00+08:00",
+    "receipt_confirmed_at": null,
+    "source": "独立订单记录",
+    "observed_at": "2026-10-18T12:00:00+08:00"
+  },
+  "order_items": [
+    {
+      "order_item_id": "ITEM-IND-014",
+      "order_id": "ORDER-IND-014",
+      "product_id": "PRODUCT-IND-014",
+      "sku_id": "SKU-IND-014",
+      "quantity": 1,
+      "unit": "台",
+      "paid_amount_fen": 42900
+    }
+  ],
+  "product": {
+    "product_id": "PRODUCT-IND-014",
+    "shop_id": "SHOP-INDEPENDENT-02",
+    "sku_id": "SKU-IND-014",
+    "title": "料理机",
+    "sku_description": "料理机标准套装，具体功能与安装条件须核实本型号资料",
+    "category": "家用电器",
+    "packing_list": [
+      "料理机主机×1",
+      "随附资料×1"
+    ],
+    "source": "独立型号目录",
+    "version": 1,
+    "usage_instructions": "未提供本型号说明书，不推断质保、维修、安装条件"
+  },
+  "shipments": [
+    {
+      "shipment_id": "SHIPMENT-IND-014-A",
+      "order_id": "ORDER-IND-014",
+      "status": "in_transit",
+      "shipped_at": "2026-10-16T14:00:00+08:00",
+      "signed_at": null,
+      "events": [
+        {
+          "at": "2026-10-16T14:00:00+08:00",
+          "status": "in_transit",
+          "description": "物流揽收"
+        },
+        {
+          "at": "2026-10-18T10:30:00+08:00",
+          "status": "in_transit",
+          "description": "物流状态更新"
+        }
+      ],
+      "source": "独立物流记录",
+      "observed_at": "2026-10-18T12:00:00+08:00"
+    }
+  ],
+  "history": {
+    "refund_transactions": [],
+    "previous_tickets": [],
+    "source": "独立售后及退款记录",
+    "observed_at": "2026-10-18T12:00:00+08:00"
+  },
+  "policy": {
+    "policy_id": "POLICY-IND-014-V1",
+    "shop_id": "SHOP-INDEPENDENT-02",
+    "version": 1,
+    "source": "独立评估店铺处理参考；非官方政策",
+    "effective_from": "2026-10-01T00:00:00+08:00",
+    "effective_to": null,
+    "rules": [
+      {
+        "rule_id": "BOUNDARY",
+        "text": "所有退款申请与金额决定均由人工处理。只读记录不证明支付渠道到账；不得承诺配送时限。故障须核实型号资料，不指导拆机。"
+      }
+    ]
+  }
+}

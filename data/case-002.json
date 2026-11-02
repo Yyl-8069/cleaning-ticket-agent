@@ -2,31 +2,31 @@
   "metadata": {
     "case_id": "CASE-002",
     "synthetic": true,
-    "platform_context": "拼多多清洁类日用品店铺售后场景模拟；非官方接口或规则",
+    "platform_context": "家用电器售后服务数据样例；非真实接口、品牌或行业统一规则",
     "snapshot_at": "2026-10-28T10:00:00+08:00",
     "timezone": "Asia/Shanghai",
     "currency": "CNY",
     "money_unit": "fen",
-    "source": "人工构造的开发样例",
-    "usage": "模拟售后工单测试数据；不代表真实订单或平台规则"
+    "source": "人工构造的家电售后工单样例",
+    "usage": "用于本地流程演示与开发评估的合成数据，不代表真实订单、品牌规格或服务承诺"
   },
   "shop": {
     "shop_id": "SHOP-DEMO-001",
-    "name": "清禾清洁日用品店（虚构）"
+    "name": "星河家电售后服务中心（样例）"
   },
   "customer": {
     "customer_id": "CUSTOMER-DEMO-002",
     "shop_id": "SHOP-DEMO-001",
-    "display_name": "模拟客户002"
+    "display_name": "样例客户002"
   },
   "ticket": {
     "ticket_id": "TK-DEMO-002",
     "shop_id": "SHOP-DEMO-001",
     "customer_id": "CUSTOMER-DEMO-002",
-    "order_id": "ORDER-DEMO-20261027-002",
+    "order_id": "ORDER-DEMO-20261028-002",
     "status": "pending",
     "assigned_to": null,
-    "created_at": "2026-10-28T09:00:00+08:00",
+    "created_at": "2026-10-28T10:00:00+08:00",
     "closed_at": null,
     "closure_reason": null
   },
@@ -35,68 +35,67 @@
       "message_id": "MSG-DEMO-002",
       "ticket_id": "TK-DEMO-002",
       "role": "customer",
-      "created_at": "2026-10-28T09:00:00+08:00",
-      "content": "我昨天买的厨房去油污清洁剂还没发货，请帮我看看什么时候能发。",
+      "created_at": "2026-10-28T10:00:00+08:00",
+      "content": "洗衣机昨天付款了，订单还是未发货，麻烦帮我查下什么时候发。",
       "attachments": []
     }
   ],
   "order": {
-    "order_id": "ORDER-DEMO-20261027-002",
+    "order_id": "ORDER-DEMO-20261028-002",
     "shop_id": "SHOP-DEMO-001",
     "customer_id": "CUSTOMER-DEMO-002",
     "status": "paid",
-    "paid_amount_fen": 5990,
+    "paid_amount_fen": 159900,
     "refunded_amount_fen": 0,
-    "paid_at": "2026-10-27T16:20:00+08:00",
+    "paid_at": "2026-10-28T08:00:00+08:00",
     "shipped_at": null,
     "receipt_confirmed_at": null,
     "after_sales_status": "none",
     "estimated_delivery_at": null,
     "version": 1,
-    "source": "模拟订单服务",
+    "source": "订单记录样例",
     "observed_at": "2026-10-28T10:00:00+08:00"
   },
   "order_items": [
     {
       "order_item_id": "ITEM-DEMO-002",
-      "order_id": "ORDER-DEMO-20261027-002",
-      "product_id": "PRODUCT-DEMO-001",
-      "sku_id": "SKU-DEMO-001",
+      "order_id": "ORDER-DEMO-20261028-002",
+      "product_id": "PRODUCT-DEMO-002",
+      "sku_id": "SKU-DEMO-002",
       "quantity": 1,
       "unit": "套",
-      "paid_amount_fen": 5990,
+      "paid_amount_fen": 159900,
       "purchase_snapshot": {
-        "captured_at": "2026-10-27T16:20:00+08:00",
-        "title": "厨房去油污清洁剂双瓶装",
-        "sku_description": "500mL/瓶 × 2瓶，喷头瓶装",
-        "category": "家居清洁 / 厨房清洁剂",
+        "captured_at": "2026-10-28T08:00:00+08:00",
+        "title": "滚筒洗衣机",
+        "sku_description": "滚筒式洗衣机，含进水管与排水管",
+        "category": "家用电器 / 大家电",
         "packing_list": [
-          "500mL厨房去油污清洁剂（含喷头） × 2瓶"
+          "洗衣机主机 × 1",
+          "进水管 × 1",
+          "排水管 × 1"
         ],
-        "usage": "厨房油污清洁；具体适用表面及操作方法需查询经审核的商品标签说明",
+        "usage": "具体额定电压、安装、操作与维护方式以经核对的本型号说明书为准，不自行推断",
         "delivery_date_promise": null
       }
     }
   ],
   "product": {
-    "product_id": "PRODUCT-DEMO-001",
+    "product_id": "PRODUCT-DEMO-002",
     "shop_id": "SHOP-DEMO-001",
-    "sku_id": "SKU-DEMO-001",
-    "title": "厨房去油污清洁剂双瓶装",
-    "sku_description": "500mL/瓶 × 2瓶，喷头瓶装",
-    "category": "家居清洁 / 厨房清洁剂",
+    "sku_id": "SKU-DEMO-002",
+    "title": "滚筒洗衣机",
+    "sku_description": "滚筒式洗衣机，含进水管与排水管",
+    "category": "家用电器 / 大家电",
     "packing_list": [
-      "500mL厨房去油污清洁剂（含喷头） × 2瓶"
+      "洗衣机主机 × 1",
+      "进水管 × 1",
+      "排水管 × 1"
     ],
-    "net_content_ml_per_bottle": 500,
-    "bottles_per_set": 2,
-    "ingredients": null,
     "approved_label_document": null,
-    "applicable_surfaces": null,
-    "usage_instructions": null,
-    "shelf_life_months": null,
-    "product_information_note": "商品名称、容量及包装均为模拟；成分、适用表面、用法和保质期尚未提供，不可推断或生成确定性使用承诺。生产日期与批次需另查实际发货批次资料。",
-    "source": "模拟商品目录",
+    "usage_instructions": "具体额定电压、安装、操作与维护方式以经核对的本型号说明书为准，不自行推断",
+    "product_information_note": "商品名称和包装构成为合成样例；品牌、额定电压、材质、功能、质保期限、安装与维修政策尚无经核实资料，不得推断或承诺",
+    "source": "家电型号目录样例",
     "version": 1,
     "observed_at": "2026-10-28T10:00:00+08:00"
   },
@@ -123,13 +122,13 @@
     "reply_delivery": "客服确认后发送，生成草稿不代表已发送"
   },
   "history": {
-    "source": "模拟售后服务",
-    "observed_at": "2026-10-28T10:00:00+08:00",
-    "previous_tickets": [],
-    "logistics_tickets": [],
-    "refund_approvals": [],
     "refund_transactions": [],
+    "refund_approvals": [],
+    "source": "售后历史样例",
+    "logistics_tickets": [],
+    "previous_tickets": [],
     "action_records": [],
-    "followups": []
+    "followups": [],
+    "observed_at": "2026-10-28T10:00:00+08:00"
   }
 }

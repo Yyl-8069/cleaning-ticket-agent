@@ -4,6 +4,7 @@
 {% if run.status in ('queued', 'running') %}<meta http-equiv="refresh" content="2">{% endif %}
 <style>body{font:16px/1.6 system-ui;max-width:900px;margin:2rem auto;padding:0 1rem;color:#17212b}section{border:1px solid #ccd5dc;border-radius:10px;padding:1rem 1.5rem;margin:1rem 0}small{color:#596673}li{margin:.4rem 0}a{color:#145ca8}</style></head>
 <body><a href="/">← 返回上传页</a><h1>工单分析</h1>
+{% if safety_notice %}<section role="alert" aria-label="安全提醒"><h2>请优先处理安全事项</h2><p><strong>{{ safety_notice }}</strong></p><small>根据客户描述生成的固定预防提醒，实物情况和故障原因仍需核实。</small></section>{% endif %}
 <p>分析状态：<strong>{{ status_label }}</strong> · 工单状态：<strong>{{ '待处理' if case.ticket.status == 'pending' else case.ticket.status }}</strong></p>
 <p>总耗时：<strong>{{ elapsed_ms if elapsed_ms is not none else '计算中' }}{% if elapsed_ms is not none %} ms{% endif %}</strong></p>
 {% if run.result %}{% set result = run.result %}
@@ -18,13 +19,17 @@
 {% if issue.human_required %}<p><strong>交接说明：</strong>{{ issue.human_reason }}</p>{% endif %}
 {% if issue.condition_state != 'not_applicable' %}<p>退款条件：{{ {'unmet': '未满足', 'met': '已有证据支持', 'unknown': '无法核实'}.get(issue.condition_state, '无法核实') }}。{{ issue.condition_reason }}</p>{% endif %}
 <p>{{ issue.recommendation }}</p>
-{% if issue.missing_information %}<ul>{% for info in issue.missing_information %}<li>{{ info }}</li>{% endfor %}</ul>{% endif %}
+{% if not result.gap_schema_version and issue.missing_information %}<ul>{% for info in issue.missing_information %}<li>{{ info }}</li>{% endfor %}</ul>{% endif %}
 {% endfor %}
 <small>人工事项仅为接手提示，尚未派单、审批或执行退款。</small>
 </section>
 {% else %}<section><h2>用户意图</h2><p>{{ result.intent }}</p></section>{% endif %}
 <section><h2>事实依据</h2><ul>{% for fact in display_facts %}<li>{{ fact.text }} <small>来源：{{ fact.source_label }}</small></li>{% endfor %}</ul><p><small>来源说明：本次上传的工单资料。</small></p></section>
-<section><h2>待确认信息</h2><ul>{% for item in result.missing_information %}<li>{{ item }}</li>{% endfor %}</ul></section>
+{% if result.gap_schema_version %}
+{% if result.customer_requests %}<section><h2>客户需补充</h2><ul>{% for item in result.customer_requests %}<li>{{ item }}</li>{% endfor %}</ul></section>{% endif %}
+{% set state_gaps = result.information_gaps|rejectattr('category', 'equalto', 'customer_evidence')|list %}
+{% if state_gaps %}<details><summary>资料与能力状态</summary><ul>{% for gap in state_gaps %}<li><strong>{{ gap.category_label }}</strong>：{{ gap.summary }} <small>处理：{{ gap.owner }}</small></li>{% endfor %}</ul></details>{% endif %}
+{% elif result.missing_information %}<section><h2>待确认信息</h2><ul>{% for item in result.missing_information %}<li>{{ item }}</li>{% endfor %}</ul></section>{% endif %}
 <section><h2>处理建议</h2><p>{{ result.recommendation }}</p><small>规则版本：{{ result.policy_version or '当前未取得适用规则' }}</small></section>
 <section><h2>回复草稿</h2><p>{{ result.reply_draft }}</p><small>仅供客服确认，尚未发送</small></section>
 {% elif run.error_type %}

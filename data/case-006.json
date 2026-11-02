@@ -2,31 +2,31 @@
   "metadata": {
     "case_id": "CASE-006",
     "synthetic": true,
-    "platform_context": "拼多多清洁类日用品店铺售后场景模拟；非官方接口或规则",
+    "platform_context": "家用电器售后服务数据样例；非真实接口、品牌或行业统一规则",
     "snapshot_at": "2026-10-28T10:00:00+08:00",
     "timezone": "Asia/Shanghai",
     "currency": "CNY",
     "money_unit": "fen",
-    "source": "人工构造的开发样例",
-    "usage": "模拟售后工单测试数据；不代表真实订单或平台规则"
+    "source": "人工构造的家电售后工单样例",
+    "usage": "用于本地流程演示与开发评估的合成数据，不代表真实订单、品牌规格或服务承诺"
   },
   "shop": {
     "shop_id": "SHOP-DEMO-001",
-    "name": "清禾清洁日用品店（虚构）"
+    "name": "星河家电售后服务中心（样例）"
   },
   "customer": {
     "customer_id": "CUSTOMER-DEMO-006",
     "shop_id": "SHOP-DEMO-001",
-    "display_name": "模拟客户006"
+    "display_name": "样例客户006"
   },
   "ticket": {
     "ticket_id": "TK-DEMO-006",
     "shop_id": "SHOP-DEMO-001",
     "customer_id": "CUSTOMER-DEMO-006",
-    "order_id": "ORDER-DEMO-20261022-006",
+    "order_id": "ORDER-DEMO-20261028-006",
     "status": "pending",
     "assigned_to": null,
-    "created_at": "2026-10-28T09:00:00+08:00",
+    "created_at": "2026-10-28T10:00:00+08:00",
     "closed_at": null,
     "closure_reason": null
   },
@@ -35,105 +35,97 @@
       "message_id": "MSG-DEMO-006",
       "ticket_id": "TK-DEMO-006",
       "role": "customer",
-      "created_at": "2026-10-28T09:00:00+08:00",
-      "content": "之前申请的清洁剂退款显示处理完成了，想确认退款记录和到账情况。",
+      "created_at": "2026-10-28T10:00:00+08:00",
+      "content": "微波炉之前申请的退款显示处理完成了，能帮我查一下退款记录和到账情况吗？",
       "attachments": []
     }
   ],
   "order": {
-    "order_id": "ORDER-DEMO-20261022-006",
+    "order_id": "ORDER-DEMO-20261028-006",
     "shop_id": "SHOP-DEMO-001",
     "customer_id": "CUSTOMER-DEMO-006",
     "status": "refunded",
-    "paid_amount_fen": 5990,
-    "refunded_amount_fen": 5990,
-    "paid_at": "2026-10-22T20:15:00+08:00",
-    "shipped_at": "2026-10-23T09:20:00+08:00",
+    "paid_amount_fen": 49900,
+    "refunded_amount_fen": 49900,
+    "paid_at": "2026-10-28T08:00:00+08:00",
+    "shipped_at": "2026-10-28T09:00:00+08:00",
     "receipt_confirmed_at": null,
     "after_sales_status": "completed",
     "estimated_delivery_at": null,
     "version": 1,
-    "source": "模拟订单服务",
+    "source": "订单记录样例",
     "observed_at": "2026-10-28T10:00:00+08:00"
   },
   "order_items": [
     {
       "order_item_id": "ITEM-DEMO-006",
-      "order_id": "ORDER-DEMO-20261022-006",
-      "product_id": "PRODUCT-DEMO-001",
-      "sku_id": "SKU-DEMO-001",
+      "order_id": "ORDER-DEMO-20261028-006",
+      "product_id": "PRODUCT-DEMO-006",
+      "sku_id": "SKU-DEMO-006",
       "quantity": 1,
       "unit": "套",
-      "paid_amount_fen": 5990,
+      "paid_amount_fen": 49900,
       "purchase_snapshot": {
-        "captured_at": "2026-10-22T20:15:00+08:00",
-        "title": "厨房去油污清洁剂双瓶装",
-        "sku_description": "500mL/瓶 × 2瓶，喷头瓶装",
-        "category": "家居清洁 / 厨房清洁剂",
+        "captured_at": "2026-10-28T08:00:00+08:00",
+        "title": "微波炉",
+        "sku_description": "家用微波炉，具体功率及容量以型号资料为准",
+        "category": "家用电器 / 厨房小家电",
         "packing_list": [
-          "500mL厨房去油污清洁剂（含喷头） × 2瓶"
+          "微波炉主机 × 1",
+          "玻璃转盘 × 1"
         ],
-        "usage": "厨房油污清洁；具体适用表面及操作方法需查询经审核的商品标签说明",
+        "usage": "具体额定电压、安装、操作与维护方式以经核对的本型号说明书为准，不自行推断",
         "delivery_date_promise": null
       }
     }
   ],
   "product": {
-    "product_id": "PRODUCT-DEMO-001",
+    "product_id": "PRODUCT-DEMO-006",
     "shop_id": "SHOP-DEMO-001",
-    "sku_id": "SKU-DEMO-001",
-    "title": "厨房去油污清洁剂双瓶装",
-    "sku_description": "500mL/瓶 × 2瓶，喷头瓶装",
-    "category": "家居清洁 / 厨房清洁剂",
+    "sku_id": "SKU-DEMO-006",
+    "title": "微波炉",
+    "sku_description": "家用微波炉，具体功率及容量以型号资料为准",
+    "category": "家用电器 / 厨房小家电",
     "packing_list": [
-      "500mL厨房去油污清洁剂（含喷头） × 2瓶"
+      "微波炉主机 × 1",
+      "玻璃转盘 × 1"
     ],
-    "net_content_ml_per_bottle": 500,
-    "bottles_per_set": 2,
-    "ingredients": null,
     "approved_label_document": null,
-    "applicable_surfaces": null,
-    "usage_instructions": null,
-    "shelf_life_months": null,
-    "product_information_note": "商品名称、容量及包装均为模拟；成分、适用表面、用法和保质期尚未提供，不可推断或生成确定性使用承诺。生产日期与批次需另查实际发货批次资料。",
-    "source": "模拟商品目录",
+    "usage_instructions": "具体额定电压、安装、操作与维护方式以经核对的本型号说明书为准，不自行推断",
+    "product_information_note": "商品名称和包装构成为合成样例；品牌、额定电压、材质、功能、质保期限、安装与维修政策尚无经核实资料，不得推断或承诺",
+    "source": "家电型号目录样例",
     "version": 1,
     "observed_at": "2026-10-28T10:00:00+08:00"
   },
   "shipments": [
     {
       "shipment_id": "SHIPMENT-DEMO-006",
-      "order_id": "ORDER-DEMO-20261022-006",
+      "order_id": "ORDER-DEMO-20261028-006",
       "carrier": "演示快递（虚构）",
       "tracking_number": "TRACK-DEMO-006",
       "declared_contents": [
         {
           "order_item_id": "ITEM-DEMO-006",
-          "quantity": 1,
-          "unit": "套"
+          "unit": "件",
+          "quantity": 1
         }
       ],
       "contents_note": "发货系统登记内容，不证明实际装箱或实际收货内容",
       "status": "returning",
       "signed_at": null,
       "estimated_delivery_at": null,
-      "source": "模拟物流服务",
+      "source": "物流轨迹样例",
       "observed_at": "2026-10-28T10:00:00+08:00",
       "events": [
         {
+          "description": "包裹揽收",
           "event_id": "TRACK-006-001",
-          "at": "2026-10-23T10:05:00+08:00",
-          "description": "快递已揽收"
+          "at": "2026-10-28T09:00:00+08:00"
         },
         {
+          "description": "退回途中",
           "event_id": "TRACK-006-002",
-          "at": "2026-10-24T02:10:00+08:00",
-          "description": "到达目的地转运中心"
-        },
-        {
-          "event_id": "TRACK-006-003",
-          "at": "2026-10-26T09:00:00+08:00",
-          "description": "模拟退回途中"
+          "at": "2026-10-28T09:15:00+08:00"
         }
       ]
     }
@@ -160,29 +152,29 @@
     "reply_delivery": "客服确认后发送，生成草稿不代表已发送"
   },
   "history": {
-    "source": "模拟售后服务",
-    "observed_at": "2026-10-28T10:00:00+08:00",
-    "previous_tickets": [],
-    "logistics_tickets": [],
-    "refund_approvals": [
-      {
-        "approval_id": "APPROVAL-DEMO-006",
-        "order_id": "ORDER-DEMO-20261022-006",
-        "status": "approved",
-        "approved_at": "2026-10-27T14:00:00+08:00"
-      }
-    ],
     "refund_transactions": [
       {
+        "completed_at": "2026-10-28T09:30:00+08:00",
         "transaction_id": "REFUND-DEMO-006",
-        "order_id": "ORDER-DEMO-20261022-006",
-        "status": "succeeded",
-        "amount_fen": 5990,
-        "completed_at": "2026-10-27T15:00:00+08:00",
-        "source": "模拟售后服务"
+        "source": "退款流水样例",
+        "order_id": "ORDER-DEMO-20261028-006",
+        "amount_fen": 49900,
+        "status": "succeeded"
       }
     ],
+    "refund_approvals": [
+      {
+        "status": "approved",
+        "order_id": "ORDER-DEMO-20261028-006",
+        "approval_id": "APPROVAL-DEMO-006",
+        "approved_at": "2026-10-28T09:00:00+08:00"
+      }
+    ],
+    "source": "售后历史样例",
+    "logistics_tickets": [],
+    "previous_tickets": [],
     "action_records": [],
-    "followups": []
+    "followups": [],
+    "observed_at": "2026-10-28T10:00:00+08:00"
   }
 }

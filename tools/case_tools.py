@@ -37,35 +37,35 @@ class CaseTools:
     def get_ticket(self, ticket_id):
         """按工单号读取工单与客户消息。"""
         return self._read('get_ticket', ticket_id, self.case['ticket']['ticket_id'],
-                          {'ticket': self.case['ticket'], 'messages': self.case['messages']}, '模拟工单快照')
+                          {'ticket': self.case['ticket'], 'messages': self.case['messages']}, '上传的工单资料')
 
     def get_order(self, order_id):
         """按订单号读取订单及商品明细。"""
         order = self.case.get('order')
         data = {'order': order, 'order_items': self.case.get('order_items', [])} if order else None
         return self._read('get_order', order_id, self.case['ticket']['order_id'], data,
-                          (order or {}).get('source', '模拟订单服务'))
+                          (order or {}).get('source', '订单记录样例'))
 
     def get_product(self, product_id):
         """按商品号读取商品目录快照。"""
         product = self.case.get('product')
         return self._read('get_product', product_id, (product or {}).get('product_id'), product,
-                          (product or {}).get('source', '模拟商品目录'))
+                          (product or {}).get('source', '家电型号目录样例'))
 
     def get_shipments(self, order_id):
         """按订单号读取包裹和物流轨迹。"""
         shipments = self.case.get('shipments', [])
         return self._read('get_shipments', order_id, self.case['ticket']['order_id'], shipments,
-                          shipments[0].get('source', '模拟物流服务') if shipments else '模拟物流服务')
+                          shipments[0].get('source', '物流轨迹样例') if shipments else '物流轨迹样例')
 
     def get_history(self, ticket_id):
         """按工单号读取关联售后历史。"""
         history = self.case.get('history')
         return self._read('get_history', ticket_id, self.case['ticket']['ticket_id'], history,
-                          (history or {}).get('source', '模拟售后服务'))
+                          (history or {}).get('source', '售后历史样例'))
 
     def get_policy(self, shop_id):
         """按店铺号读取在快照时间有效的规则。"""
         policy = applicable_policy(self.case)
         return self._read('get_policy', shop_id, self.case['ticket']['shop_id'], policy,
-                          (policy or {}).get('source', '模拟店铺规则'))
+                          (policy or {}).get('source', '家电售后规则样例'))

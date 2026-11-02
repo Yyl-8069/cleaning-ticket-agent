@@ -16,7 +16,7 @@ def sample():
 def test_accepts_case_001():
     """确认标准案例能通过输入校验。"""
     case = parse_case(SAMPLE.read_bytes())
-    assert case['ticket']['ticket_id'] == 'TK-DEMO-0001'
+    assert case['ticket']['ticket_id'] == 'TK-DEMO-001'
     assert case['metadata']['synthetic'] is True
 
 def test_rejects_invalid_json():
@@ -58,9 +58,9 @@ def test_tools_report_source(tmp_path):
     """确认物流查询返回可追溯的数据来源。"""
     db = Storage(tmp_path / 'app.db')
     case_id = db.save_case(parse_case(SAMPLE.read_bytes()))
-    result = CaseTools(db, case_id).get_shipments('ORDER-DEMO-20261022-001')
+    result = CaseTools(db, case_id).get_shipments('ORDER-DEMO-20261028-001')
     assert result['status'] == 'found'
-    assert result['source'] == '模拟物流服务'
+    assert result['source'] == '物流轨迹样例'
 
 
 def test_rejects_mismatched_product_shop():
@@ -75,7 +75,7 @@ def test_order_lookup_exposes_item_product_id(tmp_path):
     """确认订单查询提供后续商品查询所需编号。"""
     db = Storage(tmp_path / 'app.db')
     case_id = db.save_case(parse_case(SAMPLE.read_bytes()))
-    found = CaseTools(db, case_id).get_order('ORDER-DEMO-20261022-001')
+    found = CaseTools(db, case_id).get_order('ORDER-DEMO-20261028-001')
     assert found['data']['order_items'][0]['product_id'] == 'PRODUCT-DEMO-001'
 
 

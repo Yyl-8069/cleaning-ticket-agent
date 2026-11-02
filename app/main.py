@@ -2,6 +2,7 @@
 from datetime import datetime
 from contextlib import asynccontextmanager
 from pathlib import Path
+import logging
 
 from fastapi import BackgroundTasks, FastAPI, File, HTTPException, UploadFile
 from fastapi.responses import HTMLResponse, RedirectResponse
@@ -13,17 +14,20 @@ from app.observability import RunLogger
 from app.storage import Storage
 from context.case_schema import CaseValidationError, MAX_BYTES, parse_case
 from workflows.analyze_ticket import process_run
+from context.safety import customer_safety_notice
+from app.configuration import model_configuration_issue
 
 ROOT = Path(__file__).resolve().parents[1]
 templates = Jinja2Templates(directory=str(ROOT / 'app' / 'templates'))
 SOURCE_LABELS = {
-    'get_ticket': '工单资料', 'get_order': '订单资料', 'get_product': '商品目录',
-    'get_shipments': '物流记录', 'get_history': '售后记录', 'get_policy': '店铺规则',
+    'get_ticket': '工单资料', 'get_order': '订单资料', 'get_product': '家电型号目录',
+    'get_shipments': '物流记录', 'get_history': '售后记录', 'get_policy': '家电售后规则',
 }
 
 
 # 组装应用；默认数据库仅在服务器启动时初始化，避免导入时中断用户任务。
 def create_app(db_path=None, analyzer=None):
+    needs_model_configuration = analyzer is None or analyzer is analyze_ticket
     storage = Storage(db_path) if db_path else None
     logger = RunLogger(Path(db_path).parent / 'agent.jsonl') if db_path else None
 
@@ -34,24 +38,38 @@ def create_app(db_path=None, analyzer=None):
         if storage is None:
             storage = Storage(ROOT / 'runtime' / 'app.db')
             logger = RunLogger(ROOT / 'runtime' / 'agent.jsonl')
+        if needs_model_configuration:
+            issue = model_configuration_issue()
+            if issue:
+                logging.getLogger(__name__).warning('启动配置自检：%s', issue)
+            else:
+                logging.getLogger(__name__).info('启动配置自检：本机模型配置已填写；尚未验证实际鉴权及连通性。')
         yield
 
-    app = FastAPI(title='清洁日用品工单 Agent 1.0', lifespan=lifespan)
+    app = FastAPI(title='家用电器售后工单 Agent', lifespan=lifespan)
     analyzer = analyzer or analyze_ticket
 
+    # 注入的开发分析器不依赖真实模型配置。
+    def configuration_issue():
+        return model_configuration_issue() if needs_model_configuration else None
+
     @app.get('/', response_class=HTMLResponse)
+    # 展示上传入口及受控配置状态。
     def index(request: Request):
-        """展示单案例 JSON 上传页面。"""
-        return templates.TemplateResponse(request, 'index.html', {})
+        return templates.TemplateResponse(request, 'index.html', {'configuration_issue': configuration_issue()},
+                                          headers={'Cache-Control': 'no-store'})
 
     @app.post('/cases/upload')
+    # 配置可用后校验并保存工单，再排队执行分析。
     async def upload(background_tasks: BackgroundTasks, file: UploadFile = File(...)):
-        """校验并保存上传案例，然后排队执行分析。"""
         raw = await file.read(MAX_BYTES + 1)
         try:
             bundle = parse_case(raw)
         except CaseValidationError as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
+        issue = configuration_issue()
+        if issue:
+            raise HTTPException(status_code=503, detail={'code': 'model_configuration_unavailable', 'message': issue})
         case_id = storage.save_case(bundle)
         run_id = storage.create_run(case_id)
         logger.event(storage, run_id, 'run_queued', '案例校验并保存')
@@ -76,8 +94,8 @@ def create_app(db_path=None, analyzer=None):
                          'needs_information': '待补充信息', 'failed': '分析失败', 'interrupted': '分析中断'}
         if run['result'] and run['result'].get('review_required'):
             status_labels['needs_information'] = '待人工复核'
-        tool_labels = {'get_ticket': '工单', 'get_order': '订单', 'get_product': '商品',
-                       'get_shipments': '物流', 'get_history': '历史记录', 'get_policy': '店铺规则'}
+        tool_labels = {'get_ticket': '工单', 'get_order': '订单', 'get_product': '家电型号',
+                       'get_shipments': '物流', 'get_history': '售后记录', 'get_policy': '售后规则'}
         event_labels = []
         for event in run['events']:
             if event['event_type'] == 'tool_call':
@@ -93,7 +111,8 @@ def create_app(db_path=None, analyzer=None):
         return templates.TemplateResponse(request, 'result.html',
                                           {'run': run, 'case': case, 'elapsed_ms': elapsed_ms,
                                            'status_label': status_labels.get(run['status'], '未知状态'),
-                                           'event_labels': event_labels, 'display_facts': display_facts},
+                                           'event_labels': event_labels, 'display_facts': display_facts,
+                                           'safety_notice': customer_safety_notice(case)},
                                           headers={'Cache-Control': 'no-store'})
 
     @app.get('/health')
@@ -105,6 +124,15 @@ def create_app(db_path=None, analyzer=None):
         except Exception as exc:
             raise HTTPException(status_code=503, detail='数据库不可用') from exc
         return {'status': 'ok'}
+
+    # 就绪检查只验证数据库和本机配置，不产生模型调用费用。
+    @app.get('/ready')
+    def ready():
+        health()
+        issue = configuration_issue()
+        if issue:
+            raise HTTPException(status_code=503, detail={'code': 'model_configuration_unavailable', 'message': issue})
+        return {'status': 'ready', 'model_check': 'configuration_only'}
 
     return app
 

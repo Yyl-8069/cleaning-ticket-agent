@@ -1,20 +1,23 @@
 """把模型的有限业务判断与已查询事实组合成可交给客服的安全结果。"""
 from datetime import datetime
 from context.intent_decisions import normalize_decisions, evaluate_condition, valid_signed_time
+from context.safety import customer_safety_notice
 
 ISSUES = {
     'shipping_delay': '物流停滞或配送进度查询',
     'shipping_request': '未发货催发',
     'refund_request': '申请退款',
-    'leak': '客户反馈漏液，实物情况待核实',
-    'missing_item': '客户反馈少件，实收情况待核实',
+    'leak': '客户反馈电器渗水或运行异常，具体情况待核实',
+    'product_damage': '客户反馈电器外观损坏，实物情况待核实',
+    'missing_accessory': '客户反馈电器配件缺失，实收情况待核实',
+    'missing_item': '客户反馈设备或配件缺失，实收情况待核实',
     'refund_status': '查询历史退款及到账情况',
     'other': '其他诉求，需澄清具体问题',
 }
 ACTIONS = {
     'reply': '向客户说明已核实的记录',
     'request_information': '补充与诉求相关的必要信息',
-    'check_policy': '查询适用的店铺售后规则',
+    'check_policy': '查询适用的家电售后规则资料',
     'human_approval': '交客服按适用规则审核退款申请',
     'check_logistics': '核查物流进度和预计配送安排',
     'check_fulfillment': '核查备货与发货安排',
@@ -98,6 +101,10 @@ def grounded_issue(raw, tools):
     shipments = observed_data(tools, 'get_shipments') or []
     ticket_data = observed_data(tools, 'get_ticket') or {}
     messages = ticket_data.get('messages', [])
+    if 'customer_evidence' in raw and not any(
+            raw['customer_evidence'] in m.get('content', '')
+            for m in messages if m.get('role') == 'customer'):
+        raise ValueError('诉求依据不属于客户消息')
     attachments = any(m.get('attachments') for m in messages)
     facts, verified, missing, review = {}, [], [], []
     adjustments = []
@@ -180,8 +187,9 @@ def grounded_issue(raw, tools):
                         else '退款申请或已核实的退款条件须由人工审核；金额及处理结果由人工决定。')
     required = {
         'shipping_delay': ['check_logistics'], 'shipping_request': ['check_fulfillment'],
-        'refund_request': ['human_approval'] if can_request_refund else ['reply'] if full_refund else ['request_information'],
-        'leak': ['request_information'], 'missing_item': ['request_information'],
+        'refund_request': ['human_approval'] if can_request_refund else ['reply'] if full_refund or condition['state'] in ('pending', 'unmet') else ['request_information'],
+        'leak': ['request_information'], 'product_damage': ['request_information'],
+        'missing_accessory': ['request_information'], 'missing_item': ['request_information'],
         'refund_status': ['reply'], 'other': ['request_information'],
     }[issue]
     if refund_intent == 'conditional' and condition['state'] == 'unknown' and 'request_information' not in required:
@@ -192,7 +200,7 @@ def grounded_issue(raw, tools):
     allowed = set(required) | {'reply', 'check_policy'}
     if issue == 'refund_status':
         allowed.discard('check_policy')
-    if issue == 'missing_item':
+    if issue in ('missing_item', 'missing_accessory'):
         allowed.add('check_fulfillment')
     if issue == 'refund_request' and order and not full_refund:
         allowed.add('check_fulfillment' if order.get('status') == 'paid' else 'check_logistics')
@@ -233,11 +241,14 @@ def grounded_issue(raw, tools):
             recommendation.append('请先确认退款意向及订单退款记录，确认前不提交审核或执行退款。')
             reply.append('需要先确认您的退款意向及订单记录，再确定下一步处理。')
 
-    elif issue in ('leak', 'missing_item'):
-        subject = '漏液位置及外包装' if issue == 'leak' else '实收商品全貌及外包装'
+    elif issue in ('leak', 'product_damage', 'missing_accessory', 'missing_item'):
+        subject = {'leak': '电器渗水或异常部位及外包装',
+                   'product_damage': '电器外观损坏部位及外包装',
+                   'missing_accessory': '设备主机、缺失配件应有的包装位置及外包装',
+                   'missing_item': '设备主机、随附配件及外包装全貌'}[issue]
         if attachments:
             recommendation.append(f'请客服检查现有附件，核对{subject}；Agent未识别图片，不能确认损坏或少件。')
-            reply.append('已收到您提供的附件，需要进一步核实商品及包装情况。')
+            reply.append('已收到您提供的附件，需要进一步核实电器和包装资料。')
         else:
             missing.append(f'需要{subject}照片。')
             recommendation.append(f'请客户补充{subject}照片，再核对订单规格与处理规则。')
@@ -255,6 +266,8 @@ def grounded_issue(raw, tools):
         if condition['state'] == 'met':
             recommendation.append('退款条件已有记录支持，交人工核实审核，不代表退款已获批。')
             reply.append('您提出的退款条件需由客服进一步核实审核，当前不代表退款获批。')
+        elif condition['state'] == 'pending':
+            reply.append('已记录您的条件退款诉求，目前尚未到约定截止时间，需到期后结合最新物流核实；当前不会自动监控或发起退款。')
         elif condition['state'] == 'unmet':
             reply.append('目前记录不支持该条件退款申请，先处理当前问题；本次未执行退款。')
         else:
@@ -264,8 +277,16 @@ def grounded_issue(raw, tools):
         if 'human_approval' not in actions:
             actions.append('human_approval')
             adjustments.append('next_actions:human_approval_added')
+    safety_notice = customer_safety_notice({'messages': messages})
+    if safety_notice:
+        recommendation.insert(0, safety_notice)
+        reply.insert(1, safety_notice)
     if not policy and issue != 'refund_status':
-        recommendation.append('当前缺少适用规则，请客服补充规则后确定退款、补发等方案。')
+        policy_observation = tools.observed_results.get('get_policy')
+        if policy_observation is None:
+            recommendation.append('本轮尚未查询适用规则，如后续处理需要，请客服补查。')
+        elif policy_observation['status'] == 'not_found':
+            recommendation.append('本次查询未取得适用规则，请客服核实资料来源。')
     if review:
         recommendation.extend(item['reason'] for item in review)
     return {'schema_version': 2, 'issue_type': issue, 'refund_intent': refund_intent, 'decision_adjustments': adjustments,
@@ -275,6 +296,7 @@ def grounded_issue(raw, tools):
             'missing_information': missing, 'next_actions': actions,
             'action_labels': [ACTIONS[a] for a in actions], 'review_items': review,
             'recommendation': ' '.join(recommendation), 'reply_draft': ''.join(reply), '_reply_parts': reply,
+            '_recommendation_parts': recommendation,
             'policy_version': (policy or {}).get('policy_id'), 'status': 'succeeded',
             'evidence_refs': list(dict.fromkeys(raw['evidence_refs']))}
 
@@ -282,10 +304,11 @@ def grounded_issue(raw, tools):
 # 分别核实每项诉求，再汇总共享事实与客服结果，单项人工处理不阻断其余项。
 def grounded_result(raw, tools):
     decisions = normalize_decisions(raw)
-    results, reply_parts = [], []
+    results, reply_parts, recommendation_parts = [], [], []
     for item in decisions:
         result = grounded_issue(item, tools)
         reply_parts.extend(result.pop('_reply_parts'))
+        recommendation_parts.extend(result.pop('_recommendation_parts'))
         results.append(result)
     answer = dict(results[0])
     answer['schema_version'] = 3
@@ -301,8 +324,10 @@ def grounded_result(raw, tools):
         answer[key] = values
     answer['facts'] = {key: value for result in results for key, value in result['facts'].items()}
     answer['intent'] = '；'.join(dict.fromkeys(result['intent'] for result in results))
-    answer['recommendation'] = ' '.join(dict.fromkeys(result['recommendation'] for result in results))
+    answer['recommendation'] = ' '.join(dict.fromkeys(recommendation_parts))
     # 按生成时的完整片段去重，避免重复开头，也避免按句号切分破坏小数金额。
     answer['reply_draft'] = ''.join(dict.fromkeys(reply_parts))
     answer['human_required'] = any(result['human_required'] for result in results)
+    from context.information_gaps import classify_information_gaps
+    answer.update(classify_information_gaps(results, decisions, tools))
     return answer

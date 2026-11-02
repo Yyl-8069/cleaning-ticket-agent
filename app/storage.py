@@ -30,6 +30,8 @@ class Storage:
             ''')
             db.execute("UPDATE runs SET status=?, finished_at=? WHERE status IN ('queued','running')",
                        ('interrupted', now()))
+            if 'metrics' not in {r[1] for r in db.execute('PRAGMA table_info(runs)')}:
+                db.execute('ALTER TABLE runs ADD COLUMN metrics TEXT')
 
     def _db(self):
         """创建启用外键约束的 SQLite 连接。"""
@@ -71,15 +73,17 @@ class Storage:
             raise KeyError('run not found')
         result = dict(row)
         result['result'] = json.loads(result['result']) if result['result'] else None
+        result['metrics'] = json.loads(result['metrics']) if result.get('metrics') else {}
         result['events'] = [dict(e) for e in events]
         return result
 
-    def set_run(self, run_id, status, result=None, error_type=None):
+    def set_run(self, run_id, status, result=None, error_type=None, metrics=None):
         """更新分析状态，并在终态写入结果或错误类型。"""
         with self._db() as db:
-            db.execute('UPDATE runs SET status=?, result=?, error_type=?, finished_at=? WHERE id=?',
+            db.execute('UPDATE runs SET status=?, result=?, error_type=?, finished_at=?, metrics=? WHERE id=?',
                        (status, json.dumps(result, ensure_ascii=False) if result else None,
-                        error_type, now() if status not in ('queued', 'running') else None, run_id))
+                        error_type, now() if status not in ('queued', 'running') else None,
+                        json.dumps(metrics) if metrics else None, run_id))
 
     def event(self, run_id, event_type, summary):
         """保存可供页面追溯的精简运行事件。"""

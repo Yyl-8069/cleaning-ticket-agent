@@ -1,0 +1,130 @@
+{
+  "metadata": {
+    "case_id": "IND-011",
+    "synthetic": true,
+    "snapshot_at": "2026-10-18T12:00:00+08:00",
+    "timezone": "Asia/Shanghai",
+    "currency": "CNY",
+    "money_unit": "fen",
+    "source": "独立人工构造家电售后评估集v1",
+    "usage": "独立评估用合成工单；非真实店铺、品牌或官方政策；预期答案不包含在输入中",
+    "style": "多轮更正"
+  },
+  "shop": {
+    "shop_id": "SHOP-INDEPENDENT-03",
+    "name": "家电服务样例站3"
+  },
+  "customer": {
+    "customer_id": "CUSTOMER-IND-011",
+    "shop_id": "SHOP-INDEPENDENT-03",
+    "display_name": "独立样例客户11"
+  },
+  "ticket": {
+    "ticket_id": "TICKET-IND-011",
+    "shop_id": "SHOP-INDEPENDENT-03",
+    "customer_id": "CUSTOMER-IND-011",
+    "order_id": "ORDER-IND-011",
+    "status": "pending",
+    "created_at": "2026-10-18T11:30:00+08:00"
+  },
+  "messages": [
+    {
+      "message_id": "MSG-IND-011-OLD",
+      "ticket_id": "TICKET-IND-011",
+      "role": "customer",
+      "created_at": "2026-10-18T10:00:00+08:00",
+      "content": "循环扇还没到，我想退款。",
+      "attachments": []
+    },
+    {
+      "message_id": "MSG-IND-011",
+      "ticket_id": "TICKET-IND-011",
+      "role": "customer",
+      "created_at": "2026-10-18T11:30:00+08:00",
+      "content": "刚才说的退款撤回，先不要退款了。我现在只想查循环扇配送到哪一步。",
+      "attachments": []
+    }
+  ],
+  "order": {
+    "order_id": "ORDER-IND-011",
+    "shop_id": "SHOP-INDEPENDENT-03",
+    "customer_id": "CUSTOMER-IND-011",
+    "status": "shipped",
+    "paid_amount_fen": 35900,
+    "refunded_amount_fen": 0,
+    "paid_at": "2026-10-15T09:20:00+08:00",
+    "shipped_at": "2026-10-16T14:00:00+08:00",
+    "receipt_confirmed_at": null,
+    "source": "独立订单记录",
+    "observed_at": "2026-10-18T12:00:00+08:00"
+  },
+  "order_items": [
+    {
+      "order_item_id": "ITEM-IND-011",
+      "order_id": "ORDER-IND-011",
+      "product_id": "PRODUCT-IND-011",
+      "sku_id": "SKU-IND-011",
+      "quantity": 1,
+      "unit": "台",
+      "paid_amount_fen": 35900
+    }
+  ],
+  "product": {
+    "product_id": "PRODUCT-IND-011",
+    "shop_id": "SHOP-INDEPENDENT-03",
+    "sku_id": "SKU-IND-011",
+    "title": "循环扇",
+    "sku_description": "循环扇标准套装，具体功能与安装条件须核实本型号资料",
+    "category": "家用电器",
+    "packing_list": [
+      "循环扇主机×1",
+      "随附资料×1"
+    ],
+    "source": "独立型号目录",
+    "version": 1,
+    "usage_instructions": "未提供本型号说明书，不推断质保、维修、安装条件"
+  },
+  "shipments": [
+    {
+      "shipment_id": "SHIPMENT-IND-011-A",
+      "order_id": "ORDER-IND-011",
+      "status": "in_transit",
+      "shipped_at": "2026-10-16T14:00:00+08:00",
+      "signed_at": null,
+      "events": [
+        {
+          "at": "2026-10-16T14:00:00+08:00",
+          "status": "in_transit",
+          "description": "物流揽收"
+        },
+        {
+          "at": "2026-10-18T10:30:00+08:00",
+          "status": "in_transit",
+          "description": "物流状态更新"
+        }
+      ],
+      "source": "独立物流记录",
+      "observed_at": "2026-10-18T12:00:00+08:00"
+    }
+  ],
+  "history": {
+    "refund_transactions": [],
+    "previous_tickets": [],
+    "source": "独立售后及退款记录",
+    "observed_at": "2026-10-18T12:00:00+08:00"
+  },
+  "policy": {
+    "policy_id": "POLICY-IND-011-V1",
+    "shop_id": "SHOP-INDEPENDENT-03",
+    "version": 1,
+    "source": "独立评估店铺处理参考；非官方政策",
+    "effective_from": "2026-10-01T00:00:00+08:00",
+    "effective_to": null,
+    "rules": [
+      {
+        "rule_id": "BOUNDARY",
+        "text": "所有退款申请与金额决定均由人工处理。只读记录不证明支付渠道到账；不得承诺配送时限。故障须核实型号资料，不指导拆机。"
+      }
+    ]
+  }
+}

@@ -107,7 +107,7 @@ def test_agent_reports_each_model_call(tmp_path, monkeypatch):
         def bind_tools(self, tools):
             return self
         # 返回无事实的合法结果，触发一次模型观测。
-        def invoke(self, messages):
+        def invoke(self, messages, **kwargs):
             answer = result()
             return AIMessage(content=json.dumps(answer, ensure_ascii=False),
                              usage_metadata={'input_tokens': 7, 'output_tokens': 5, 'total_tokens': 12})
@@ -146,12 +146,12 @@ def test_langchain_agent_calls_scoped_tools(tmp_path, monkeypatch):
             assert [item.name for item in tools][:2] == ['get_ticket', 'get_order']
             return self
         # 先请求工具，再返回固定结构化答案。
-        def invoke(self, messages):
+        def invoke(self, messages, **kwargs):
             calls.append(messages)
             if len(calls) == 1:
                 return AIMessage(content='', tool_calls=[
-                    {'name': 'get_ticket', 'args': {'identifier': 'TK-DEMO-0001'}, 'id': 'ticket'},
-                    {'name': 'get_order', 'args': {'identifier': 'ORDER-DEMO-20261022-001'}, 'id': 'one'},
+                    {'name': 'get_ticket', 'args': {'identifier': 'TK-DEMO-001'}, 'id': 'ticket'},
+                    {'name': 'get_order', 'args': {'identifier': 'ORDER-DEMO-20261028-001'}, 'id': 'one'},
                     {'name': 'get_policy', 'args': {'identifier': 'SHOP-DEMO-001'}, 'id': 'two'}])
             return AIMessage(content=json.dumps(result(), ensure_ascii=False))
     monkeypatch.setenv('DEEPSEEK_API_KEY', 'test-only')
@@ -174,7 +174,7 @@ def test_agent_rejects_json_array_with_safe_reason(tmp_path, monkeypatch):
         def bind_tools(self, tools):
             return self
         # 模拟结构错误但合法的 JSON。
-        def invoke(self, messages):
+        def invoke(self, messages, **kwargs):
             return AIMessage(content='[]')
     monkeypatch.setenv('DEEPSEEK_API_KEY', 'test-only')
     monkeypatch.setattr(ticket_agent, 'ChatOpenAI', FakeModel)

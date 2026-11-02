@@ -19,7 +19,7 @@ def test_customer_and_model_cannot_authorize_money(tmp_path, text):
         'approved_amount': 1000000, 'refund_executed': True, 'facts': {'paid_amount_fen': 1000000},
         'reply_draft': '已为您退款10000元', 'human_required': False}
     answer = validate_result({'issues': [raw], 'approved': True}, tools)
-    assert answer['facts']['paid_amount_fen'] == 5990
+    assert answer['facts']['paid_amount_fen'] == 229900
     assert answer['facts']['refunded_amount_fen'] == 0
     assert answer['issues'][0]['human_required'] is True
     assert 'human_approval' in answer['next_actions']
@@ -46,7 +46,7 @@ def test_tool_text_cannot_change_refund_authority(tmp_path):
     answer = validate_result(decision('leak', ['human_approval', 'request_information'], 'requested'), tools)
     assert answer['issues'][0]['human_required'] is True
     assert '10000' not in answer['reply_draft']
-    assert answer['facts']['paid_amount_fen'] == 5990
+    assert answer['facts']['paid_amount_fen'] == 8990
 
 # 越权写工具根本不在运行时能力范围，未知请求在执行前拒绝。
 def test_runtime_refuses_refund_tool_and_preserves_order(tmp_path, monkeypatch):
@@ -62,7 +62,7 @@ def test_runtime_refuses_refund_tool_and_preserves_order(tmp_path, monkeypatch):
                 'get_shipments', 'get_history', 'get_policy'}
             return self
         # 模型尝试请求不存在的退款工具。
-        def invoke(self, messages):
+        def invoke(self, messages, **kwargs):
             return AIMessage(content='', tool_calls=[{'name': 'refund_order',
                 'args': {'identifier': 'O', 'amount_fen': 1000000}, 'id': 'attack'}])
     monkeypatch.setenv('DEEPSEEK_API_KEY', 'test-only')

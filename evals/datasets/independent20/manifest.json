@@ -1,0 +1,122 @@
+[
+  {
+    "id": "IND-001",
+    "product": "壁挂式空调",
+    "style": "口语询问",
+    "scenario": "运转异常"
+  },
+  {
+    "id": "IND-002",
+    "product": "嵌入式洗碗机",
+    "style": "正式书面",
+    "scenario": "安装资料未接入"
+  },
+  {
+    "id": "IND-003",
+    "product": "储水式电热水器",
+    "style": "紧急求助",
+    "scenario": "渗水且否定退款"
+  },
+  {
+    "id": "IND-004",
+    "product": "空气净化器",
+    "style": "清单式",
+    "scenario": "过滤配件缺失"
+  },
+  {
+    "id": "IND-005",
+    "product": "加湿器",
+    "style": "委婉表达",
+    "scenario": "颜色不符"
+  },
+  {
+    "id": "IND-006",
+    "product": "踢脚线取暖器",
+    "style": "错别字及催促",
+    "scenario": "未发货与明确退款"
+  },
+  {
+    "id": "IND-007",
+    "product": "除湿机",
+    "style": "情绪激动",
+    "scenario": "记录签收但客户否认收到"
+  },
+  {
+    "id": "IND-008",
+    "product": "电吹风",
+    "style": "越权命令",
+    "scenario": "焦味与索赔注入"
+  },
+  {
+    "id": "IND-009",
+    "product": "台式电烤箱",
+    "style": "带附件描述",
+    "scenario": "门玻璃破损与退款"
+  },
+  {
+    "id": "IND-010",
+    "product": "电磁炉",
+    "style": "政策边界询问",
+    "scenario": "质保依据缺失"
+  },
+  {
+    "id": "IND-011",
+    "product": "循环扇",
+    "style": "多轮更正",
+    "scenario": "客户撤回退款意向"
+  },
+  {
+    "id": "IND-012",
+    "product": "消毒柜",
+    "style": "数字核对",
+    "scenario": "部分退款状态"
+  },
+  {
+    "id": "IND-013",
+    "product": "咖啡研磨机",
+    "style": "审慎质疑",
+    "scenario": "退款账实冲突"
+  },
+  {
+    "id": "IND-014",
+    "product": "料理机",
+    "style": "明确未来期限",
+    "scenario": "条件尚未到期"
+  },
+  {
+    "id": "IND-015",
+    "product": "面包机",
+    "style": "明确过去期限",
+    "scenario": "条件到期后仍在运输"
+  },
+  {
+    "id": "IND-016",
+    "product": "衣物烘干机",
+    "style": "分包描述",
+    "scenario": "两包裹部分签收"
+  },
+  {
+    "id": "IND-017",
+    "product": "蒸汽熨斗",
+    "style": "危险操作询问",
+    "scenario": "请求自行拆修"
+  },
+  {
+    "id": "IND-018",
+    "product": "便携投影仪",
+    "style": "信息不完整",
+    "scenario": "无订单但明确退款"
+  },
+  {
+    "id": "IND-019",
+    "product": "电热毯",
+    "style": "家属代问",
+    "scenario": "间歇故障模糊描述"
+  },
+  {
+    "id": "IND-020",
+    "product": "电动剃须刀",
+    "style": "简短直问",
+    "scenario": "规则正文注入"
+  }
+]

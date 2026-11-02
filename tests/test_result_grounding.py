@@ -59,7 +59,7 @@ def test_confirmed_refund_is_reported_without_review(tmp_path):
     answer = validate_result(decision('refund_status', ['reply'], 'status'), prepare(tmp_path, 6))
     assert answer['review_items'] == []
     assert answer['facts']['refund_confirmed'] is True
-    assert '59.90' in answer['reply_draft']
+    assert '499.00' in answer['reply_draft']
     assert '流水显示退款成功' in answer['reply_draft']
     assert '无法确认到账' in answer['reply_draft']
     assert 'request_information' not in answer['next_actions']
@@ -78,7 +78,7 @@ def test_invalid_refund_evidence_is_local_review(tmp_path, kind):
     answer = validate_result(decision('refund_status', ['reply'], 'status'), prepare(tmp_path, 6, mutate))
     assert answer['facts']['refund_confirmed'] is False
     assert answer['review_items']
-    assert answer['facts']['paid_amount_fen'] == 5990
+    assert answer['facts']['paid_amount_fen'] == 49900
     assert '流水显示退款成功' not in answer['reply_draft']
 
 # 未查询、越权、伪造工具名不能用作证据。
@@ -99,6 +99,26 @@ def test_customer_report_does_not_become_verified_damage(tmp_path, number, issue
     assert '商品确实漏液' not in answer['reply_draft']
     assert '确定少发' not in answer['reply_draft']
     assert '待核实' in answer['intent']
+
+
+# 电器渗水须提供停止使用、勿通电和勿自行拆机的安全提示。
+def test_electrical_leak_includes_stop_use_safety_advice(tmp_path):
+    answer = validate_result(decision('leak', ['request_information'], 'none'), prepare(tmp_path, 4))
+    assert '停止使用' in answer['reply_draft']
+    assert '不要通电' in answer['reply_draft']
+    assert '自行拆机' in answer['reply_draft']
+
+
+# 外观损坏与配件缺失使用独立分类，并保留退款人工审核边界。
+@pytest.mark.parametrize('number,issue,refund,required', [
+    (3, 'product_damage', 'requested', 'human_approval'),
+    (5, 'missing_accessory', 'none', 'request_information'),
+])
+def test_appliance_specific_issue_categories(tmp_path, number, issue, refund, required):
+    actions = ['request_information', 'human_approval'] if refund == 'requested' else ['request_information']
+    answer = validate_result(decision(issue, actions, refund), prepare(tmp_path, number))
+    assert answer['issue_type'] == issue
+    assert required in answer['next_actions']
 
 # 有附件时不无条件重复索取照片。
 def test_existing_attachment_needs_inspection_not_reupload(tmp_path):
@@ -166,7 +186,7 @@ def test_malformed_tracking_events_keep_safe_analysis(tmp_path, events):
     # 为当前边界场景修改隔离测试数据。
     def mutate(case): case['shipments'][0]['events'] = events
     answer = validate_result(decision(), prepare(tmp_path, change=mutate))
-    assert answer['facts']['paid_amount_fen'] == 5990
+    assert answer['facts']['paid_amount_fen'] == 12990
     assert 'logistics_age_hours' not in answer['facts']
     assert any(item['field'] == 'shipment_events' for item in answer['review_items'])
 
@@ -229,7 +249,7 @@ def test_future_condition_handles_current_shipping_first(tmp_path):
                         'evidence_refs': ['get_ticket']}
     answer = validate_result({'issues': [raw]}, prepare(tmp_path))
     issue = answer['issues'][0]
-    assert issue['condition_state'] == 'unmet'
+    assert issue['condition_state'] == 'pending'
     assert not issue['human_required']
     assert 'human_approval' not in issue['next_actions']
     assert 'request_information' not in issue['next_actions']
@@ -258,7 +278,7 @@ def test_multi_reply_shares_intro_and_keeps_each_issue(tmp_path, refund):
     answer = validate_result(raw, tools)
     reply = answer['reply_draft']
     assert reply.count('您好。') == 1
-    assert reply.count('实付 59.90 元') == 1
+    assert reply.count('实付 129.90 元') == 1
     assert reply.count('累计退款 0.00 元') == 1
     assert '配送进度' in reply
     if refund == 'requested':

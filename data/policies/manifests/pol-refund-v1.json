@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "document_id": "POL-REFUND",
+  "version": 1,
+  "title": "退款申请与历史退款查询规范",
+  "shop_id": "SHOP-DEMO-001",
+  "topics": [
+    "退款申请",
+    "退款查询",
+    "退换货"
+  ],
+  "scope_type": "shop",
+  "scope_value": "SHOP-DEMO-001",
+  "source_kind": "project_reference",
+  "source_name": "项目自编家电售后处理参考",
+  "source_ref": "项目资料包2026-10-31",
+  "file_ref": "documents/pol-refund-v1.pdf",
+  "sha256": "5730154547702813a10b506dc2e61010660e9ae4fa8b63d05472986ef8ecfda2",
+  "effective_from": "2026-10-01T00:00:00+08:00",
+  "effective_to": null,
+  "time_basis": "case_snapshot_at",
+  "authored_at": "2026-10-31",
+  "retrospective_reference": true,
+  "status": "draft",
+  "page_count": 2
+}

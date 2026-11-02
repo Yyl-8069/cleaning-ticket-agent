@@ -35,7 +35,7 @@ def test_condition_states():
     condition = {'kind': 'not_delivered_by', 'deadline': '2026-10-28T18:00:00+08:00',
                  'evidence_refs': ['get_ticket', 'get_order', 'get_shipments']}
     assert evaluate_condition(None, tools)['state'] == 'not_applicable'
-    assert evaluate_condition(condition, tools)['state'] == 'unmet'
+    assert evaluate_condition(condition, tools)['state'] == 'pending'
     condition['deadline'] = '2026-10-26T18:00:00+08:00'
     assert evaluate_condition(condition, tools)['state'] == 'unknown'
     tools = observations('2026-10-26T18:00:00+08:00还没送到就退款')
@@ -77,7 +77,7 @@ def test_relative_deadline_requires_exact_message_anchor():
 def test_unrelated_date_cannot_anchor_delivery_condition():
     shipment = {'order_id': 'O1', 'status': 'in_transit', 'signed_at': None,
                 'events': [{'at': '2026-10-27T09:00:00+08:00', 'status': 'in_transit'}]}
-    tools = observations('我在2026-10-26T18:00:00+08:00买的，如果瓶子漏液就退款。', shipments=[shipment])
+    tools = observations('我在2026-10-26T18:00:00+08:00买的，如果电热水壶渗水就申请退款。', shipments=[shipment])
     condition = {'kind': 'not_delivered_by', 'deadline': '2026-10-26T18:00:00+08:00', 'evidence_refs': ['get_ticket']}
     assert evaluate_condition(condition, tools)['state'] == 'unknown'
 

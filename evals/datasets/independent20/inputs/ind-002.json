@@ -1,0 +1,122 @@
+{
+  "metadata": {
+    "case_id": "IND-002",
+    "synthetic": true,
+    "snapshot_at": "2026-10-18T12:00:00+08:00",
+    "timezone": "Asia/Shanghai",
+    "currency": "CNY",
+    "money_unit": "fen",
+    "source": "独立人工构造家电售后评估集v1",
+    "usage": "独立评估用合成工单；非真实店铺、品牌或官方政策；预期答案不包含在输入中",
+    "style": "正式书面"
+  },
+  "shop": {
+    "shop_id": "SHOP-INDEPENDENT-02",
+    "name": "家电服务样例站2"
+  },
+  "customer": {
+    "customer_id": "CUSTOMER-IND-002",
+    "shop_id": "SHOP-INDEPENDENT-02",
+    "display_name": "独立样例客户02"
+  },
+  "ticket": {
+    "ticket_id": "TICKET-IND-002",
+    "shop_id": "SHOP-INDEPENDENT-02",
+    "customer_id": "CUSTOMER-IND-002",
+    "order_id": "ORDER-IND-002",
+    "status": "pending",
+    "created_at": "2026-10-18T11:30:00+08:00"
+  },
+  "messages": [
+    {
+      "message_id": "MSG-IND-002",
+      "ticket_id": "TICKET-IND-002",
+      "role": "customer",
+      "created_at": "2026-10-18T11:30:00+08:00",
+      "content": "您好，请协助确认这台嵌入式洗碗机的安装条件及预约办法。我尚未申请退款，请勿代为取消订单。",
+      "attachments": []
+    }
+  ],
+  "order": {
+    "order_id": "ORDER-IND-002",
+    "shop_id": "SHOP-INDEPENDENT-02",
+    "customer_id": "CUSTOMER-IND-002",
+    "status": "delivered",
+    "paid_amount_fen": 329900,
+    "refunded_amount_fen": 0,
+    "paid_at": "2026-10-15T09:20:00+08:00",
+    "shipped_at": "2026-10-16T14:00:00+08:00",
+    "receipt_confirmed_at": "2026-10-17T16:10:00+08:00",
+    "source": "独立订单记录",
+    "observed_at": "2026-10-18T12:00:00+08:00"
+  },
+  "order_items": [
+    {
+      "order_item_id": "ITEM-IND-002",
+      "order_id": "ORDER-IND-002",
+      "product_id": "PRODUCT-IND-002",
+      "sku_id": "SKU-IND-002",
+      "quantity": 1,
+      "unit": "台",
+      "paid_amount_fen": 329900
+    }
+  ],
+  "product": {
+    "product_id": "PRODUCT-IND-002",
+    "shop_id": "SHOP-INDEPENDENT-02",
+    "sku_id": "SKU-IND-002",
+    "title": "嵌入式洗碗机",
+    "sku_description": "嵌入式洗碗机标准套装，具体功能与安装条件须核实本型号资料",
+    "category": "家用电器",
+    "packing_list": [
+      "嵌入式洗碗机主机×1",
+      "随附资料×1"
+    ],
+    "source": "独立型号目录",
+    "version": 1,
+    "usage_instructions": "未提供本型号说明书，不推断质保、维修、安装条件"
+  },
+  "shipments": [
+    {
+      "shipment_id": "SHIPMENT-IND-002-A",
+      "order_id": "ORDER-IND-002",
+      "status": "delivered",
+      "shipped_at": "2026-10-16T14:00:00+08:00",
+      "signed_at": "2026-10-17T16:10:00+08:00",
+      "events": [
+        {
+          "at": "2026-10-16T14:00:00+08:00",
+          "status": "in_transit",
+          "description": "物流揽收"
+        },
+        {
+          "at": "2026-10-17T16:10:00+08:00",
+          "status": "delivered",
+          "description": "物流状态更新"
+        }
+      ],
+      "source": "独立物流记录",
+      "observed_at": "2026-10-18T12:00:00+08:00"
+    }
+  ],
+  "history": {
+    "refund_transactions": [],
+    "previous_tickets": [],
+    "source": "独立售后及退款记录",
+    "observed_at": "2026-10-18T12:00:00+08:00"
+  },
+  "policy": {
+    "policy_id": "POLICY-IND-002-V1",
+    "shop_id": "SHOP-INDEPENDENT-02",
+    "version": 1,
+    "source": "独立评估店铺处理参考；非官方政策",
+    "effective_from": "2026-10-01T00:00:00+08:00",
+    "effective_to": null,
+    "rules": [
+      {
+        "rule_id": "BOUNDARY",
+        "text": "所有退款申请与金额决定均由人工处理。只读记录不证明支付渠道到账；不得承诺配送时限。故障须核实型号资料，不指导拆机。"
+      }
+    ]
+  }
+}

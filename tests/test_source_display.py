@@ -12,8 +12,8 @@ SAMPLE = Path(__file__).resolve().parents[1] / 'data/case-001.json'
 # 正式来源名称只改变页面展示，不改写已保存来源或原始工单。
 @pytest.mark.parametrize('source_ref,label', [
     ('get_ticket', '工单资料'), ('get_order', '订单资料'),
-    ('get_product', '商品目录'), ('get_shipments', '物流记录'),
-    ('get_history', '售后记录'), ('get_policy', '店铺规则'),
+    ('get_product', '家电型号目录'), ('get_shipments', '物流记录'),
+    ('get_history', '售后记录'), ('get_policy', '家电售后规则'),
     (None, '上传资料'), ('legacy_source', '上传资料'),
 ])
 def test_formal_source_names_preserve_original_evidence(tmp_path, source_ref, label):

@@ -31,8 +31,14 @@ def normalize_decisions(raw: dict) -> list[dict]:
                     or any(not isinstance(r, str) for r in condition['evidence_refs'])):
                 raise ValueError('模型输出业务判断无效')
             condition = {k: condition.get(k) for k in ('kind', 'deadline', 'evidence_refs')}
-        result.append({'issue_type': issue, 'refund_intent': refund, 'next_actions': list(dict.fromkeys(actions)),
-                       'evidence_refs': list(dict.fromkeys(refs)), 'condition': condition})
+        decision = {'issue_type': issue, 'refund_intent': refund, 'next_actions': list(dict.fromkeys(actions)),
+                    'evidence_refs': list(dict.fromkeys(refs)), 'condition': condition}
+        if 'customer_evidence' in item:
+            evidence = item['customer_evidence']
+            if not isinstance(evidence, str) or not evidence.strip():
+                raise ValueError('模型输出业务判断无效')
+            decision['customer_evidence'] = evidence
+        result.append(decision)
     return result
 
 
@@ -120,7 +126,7 @@ def evaluate_condition(condition, tools) -> dict:
             or not anchored_deadline(deadline, (ticket.get('data') or {}).get('messages', []), snapshot)):
         return unknown
     if deadline > snapshot:
-        return {'state': 'unmet', 'reason': '依据客户消息确定的截止时间尚未到达，不代表未来一定送达。'}
+        return {'state': 'pending', 'reason': '依据客户消息确定的截止时间尚未到达，需要到期后结合最新物流核实；当前不会自动监控条件。'}
     order_response = tools.observed_results.get('get_order', {})
     shipment_response = tools.observed_results.get('get_shipments', {})
     if order_response.get('status') != 'found' or shipment_response.get('status') != 'found':

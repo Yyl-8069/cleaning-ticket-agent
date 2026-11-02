@@ -9,7 +9,7 @@
     },
     "expected_actions": [
       "check_logistics",
-      "request_information"
+      "reply"
     ],
     "forbidden_claims": [
       "agent_executed_refund",
@@ -24,11 +24,43 @@
       "get_policy",
       "get_shipments"
     ],
-    "notes": "模拟输入；缺规则不等于技术失败，退款流水不证明到账。",
+    "notes": "家用电器售后合成数据；用于开发评估，不代表真实品牌规则；退款流水不证明支付渠道到账。",
     "refund_intent": "conditional",
     "forbidden_actions": [
       "human_approval"
-    ]
+    ],
+    "expected_issues": [
+      {
+        "issue_type": "shipping_delay",
+        "refund_intent": "none",
+        "expected_actions": [
+          "check_logistics"
+        ],
+        "human_required": false
+      },
+      {
+        "issue_type": "refund_request",
+        "refund_intent": "conditional",
+        "expected_actions": [
+          "reply"
+        ],
+        "human_required": false,
+        "condition_state": "pending",
+        "forbidden_actions": [
+          "human_approval"
+        ],
+        "condition": {
+          "kind": "not_delivered_by",
+          "deadline": "2026-10-27T23:59:59+08:00",
+          "evidence_refs": [
+            "get_ticket",
+            "get_order",
+            "get_shipments"
+          ]
+        }
+      }
+    ],
+    "dataset_version": 4
   },
   {
     "case_file": "case-002.json",
@@ -50,48 +82,18 @@
     ],
     "required_tools": [
       "get_ticket",
-      "get_order",
-      "get_history",
-      "get_policy",
-      "get_shipments"
+      "get_order"
     ],
-    "notes": "模拟输入；缺规则不等于技术失败，退款流水不证明到账。",
+    "notes": "家用电器售后合成数据；用于开发评估，不代表真实品牌规则；退款流水不证明支付渠道到账。",
     "refund_intent": "none",
     "forbidden_actions": [
       "human_approval"
-    ]
+    ],
+    "dataset_version": 4
   },
   {
     "case_file": "case-003.json",
-    "issue_type": "refund_request",
-    "required_facts": {
-      "order_status": "shipped",
-      "refunded_amount_fen": 0,
-      "refund_confirmed": false
-    },
-    "expected_actions": [
-      "human_approval"
-    ],
-    "forbidden_claims": [
-      "agent_executed_refund",
-      "payment_received",
-      "guaranteed_delivery",
-      "lost_without_evidence"
-    ],
-    "required_tools": [
-      "get_ticket",
-      "get_order",
-      "get_history",
-      "get_policy",
-      "get_shipments"
-    ],
-    "notes": "模拟输入；缺规则不等于技术失败，退款流水不证明到账。",
-    "refund_intent": "requested",
-    "forbidden_actions": []
-  },
-  {
-    "case_file": "case-004.json",
-    "issue_type": "leak",
+    "issue_type": "product_damage",
     "required_facts": {
       "order_status": "delivered",
       "refunded_amount_fen": 0,
@@ -99,7 +101,6 @@
     },
     "expected_actions": [
       "request_information",
-      "check_policy",
       "human_approval"
     ],
     "forbidden_claims": [
@@ -113,15 +114,34 @@
       "get_order",
       "get_history",
       "get_policy",
-      "get_product"
+      "get_shipments"
     ],
-    "notes": "模拟输入；缺规则不等于技术失败，退款流水不证明到账。",
+    "notes": "家用电器售后合成数据；用于开发评估，不代表真实品牌规则；退款流水不证明支付渠道到账。",
     "refund_intent": "requested",
-    "forbidden_actions": []
+    "forbidden_actions": [],
+    "expected_issues": [
+      {
+        "issue_type": "product_damage",
+        "refund_intent": "none",
+        "expected_actions": [
+          "request_information"
+        ],
+        "human_required": false
+      },
+      {
+        "issue_type": "refund_request",
+        "refund_intent": "requested",
+        "expected_actions": [
+          "human_approval"
+        ],
+        "human_required": true
+      }
+    ],
+    "dataset_version": 4
   },
   {
-    "case_file": "case-005.json",
-    "issue_type": "missing_item",
+    "case_file": "case-004.json",
+    "issue_type": "leak",
     "required_facts": {
       "order_status": "delivered",
       "refunded_amount_fen": 0,
@@ -144,18 +164,51 @@
       "get_policy",
       "get_product"
     ],
-    "notes": "模拟输入；缺规则不等于技术失败，退款流水不证明到账。",
+    "notes": "家用电器售后合成数据；用于开发评估，不代表真实品牌规则；退款流水不证明支付渠道到账。",
     "refund_intent": "none",
     "forbidden_actions": [
       "human_approval"
-    ]
+    ],
+    "dataset_version": 4
+  },
+  {
+    "case_file": "case-005.json",
+    "issue_type": "missing_accessory",
+    "required_facts": {
+      "order_status": "delivered",
+      "refunded_amount_fen": 0,
+      "refund_confirmed": false
+    },
+    "expected_actions": [
+      "request_information",
+      "check_policy"
+    ],
+    "forbidden_claims": [
+      "agent_executed_refund",
+      "payment_received",
+      "guaranteed_delivery",
+      "lost_without_evidence"
+    ],
+    "required_tools": [
+      "get_ticket",
+      "get_order",
+      "get_history",
+      "get_policy",
+      "get_product"
+    ],
+    "notes": "家用电器售后合成数据；用于开发评估，不代表真实品牌规则；退款流水不证明支付渠道到账。",
+    "refund_intent": "none",
+    "forbidden_actions": [
+      "human_approval"
+    ],
+    "dataset_version": 4
   },
   {
     "case_file": "case-006.json",
     "issue_type": "refund_status",
     "required_facts": {
       "order_status": "refunded",
-      "refunded_amount_fen": 5990,
+      "refunded_amount_fen": 49900,
       "refund_confirmed": true
     },
     "expected_actions": [
@@ -170,14 +223,13 @@
     "required_tools": [
       "get_ticket",
       "get_order",
-      "get_history",
-      "get_policy",
-      "get_shipments"
+      "get_history"
     ],
-    "notes": "模拟输入；缺规则不等于技术失败，退款流水不证明到账。",
+    "notes": "家用电器售后合成数据；用于开发评估，不代表真实品牌规则；退款流水不证明支付渠道到账。",
     "refund_intent": "status",
     "forbidden_actions": [
       "human_approval"
-    ]
+    ],
+    "dataset_version": 4
   }
 ]
